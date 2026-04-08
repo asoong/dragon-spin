@@ -3,6 +3,7 @@ import { RNG } from './rng';
 import { write, writeln, moveTo, clearScreen, clearLine, Color, colorize, pad } from './terminal';
 import { waitForKey, prompt } from './input';
 import { sleep } from './animator';
+import { demoMode, demoWaitForKey } from './demo';
 
 const PEARL_SPAWN_CHANCE = 0.15;
 const POT_EXPLODE_CHANCE = 0.10;
@@ -140,8 +141,17 @@ export async function runJackpotGame(state: GameState, rng: RNG): Promise<number
   const promptRow = BOARD_START_ROW + BOARD_ROWS * 2 + 3;
 
   while (!wonTier) {
-    // Use readline prompt for reliable multi-digit input
-    const answer = await prompt('  Pick an orb (1-12): ');
+    let answer: string;
+    if (demoMode) {
+      await sleep(800);
+      const unrevealed = Array.from({ length: BOARD_SIZE }, (_, i) => i)
+        .filter(i => !revealed.has(i));
+      const pick = unrevealed[rng.int(0, unrevealed.length - 1)];
+      answer = String(pick + 1);
+    } else {
+      // Use readline prompt for reliable multi-digit input
+      answer = await prompt('  Pick an orb (1-12): ');
+    }
     const num = parseInt(answer, 10);
     if (isNaN(num) || num < 1 || num > 12) {
       write(moveTo(promptRow + 1, col));
@@ -209,7 +219,7 @@ export async function runJackpotGame(state: GameState, rng: RNG): Promise<number
   write(moveTo(promptRow + 3, col));
   write(colorize('Press any key to continue...', Color.dim));
 
-  await waitForKey();
+  await demoWaitForKey(waitForKey, 2000);
 
   return payout;
 }

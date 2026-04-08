@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ ! -f /tmp/dragon-spin-demo.pid ] || ! kill -0 $(cat /tmp/dragon-spin-demo.pid) 2>/dev/null; then osascript -e 'tell application \"Terminal\" to do script \"dragon-spin --demo\"' >/dev/null 2>&1; fi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f /tmp/dragon-spin-demo.pid ]; then kill $(cat /tmp/dragon-spin-demo.pid) 2>/dev/null; rm -f /tmp/dragon-spin-demo.pid; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

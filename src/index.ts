@@ -12,6 +12,7 @@ import { runBonus } from './bonus';
 import { BonusMode } from './types';
 import { saveGame } from './save';
 import { animateMiniGameReel } from './animator';
+import { enableDemoMode, writePidFile, cleanupPidFile } from './demo';
 
 const QUICK_PRESETS = [
   { name: 'Casual    — 1,000 credits, 23 lines, 1/line  (23/spin)',  credits: 1000, lines: 23, bet: 1  },
@@ -104,6 +105,23 @@ async function playMiniGameMenu(state: GameState, rng: RNG): Promise<void> {
 
 async function main(): Promise<void> {
   const rng = createRNG();
+
+  // Demo mode: skip menus, auto-play for Claude Code hook integration
+  if (process.argv.includes('--demo')) {
+    enableDemoMode();
+    writePidFile();
+
+    const demoCleanup = () => { cleanupPidFile(); process.exit(0); };
+    process.on('SIGTERM', demoCleanup);
+    process.on('SIGINT', demoCleanup);
+    process.on('SIGHUP', demoCleanup);
+    process.on('exit', cleanupPidFile);
+
+    renderTitle();
+    const state = createFreshState(1000, 23, 1);
+    await gameLoop(state, rng);
+    return;
+  }
 
   renderTitle();
 

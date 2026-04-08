@@ -1,10 +1,12 @@
 # Dragon Spin CLI
 
-A terminal-based recreation of the Dragon Spin slot machine.
+The greatest slot machine ever built — and it runs in your terminal.
+
+Dragon Spin CLI is a faithful recreation of the legendary Dragon Spin cabinet by Scientific Games, rebuilt from the ground up as a pure terminal experience. No browser, no GPU, no casino floor required. Just `npx dragon-spin` and you're pulling reels with mystery stacks, free spin bonuses, and jackpot picks — all rendered in glorious ANSI color.
 
 ```
 ╔══════════════════════════════════════╗
-║         D R A G O N   S P I N       ║
+║         D R A G O N   S P I N        ║
 ║            ~ CLI Edition ~           ║
 ╚══════════════════════════════════════╝
 ```
@@ -38,107 +40,80 @@ npm link
 npx dragon-spin
 ```
 
-### Publish to npm
-
-```bash
-npm login
-npm publish
-```
-
-The `prepublishOnly` script auto-compiles TypeScript before publishing. The `files` field ensures only the compiled `dist/` is shipped — no source code, no `node_modules`.
-
-## How to Play
-
-### Starting a Game
-
-When you launch, you'll be prompted to start a **New Game** or **Continue** a saved session.
-
-**New Game** walks you through setup:
-1. Pick your starting credits (100 / 500 / 1,000 / 5,000)
-2. Pick how many paylines to play (1–30)
-3. Pick your bet per line (1 / 2 / 5 / 10 / 25)
-
-**Continue** loads your last session from `~/.dragon-spin/save.json`. The game auto-saves after every spin.
-
-### Controls
-
-| Key | Action |
-|-----|--------|
-| `Space` or `Enter` | Spin the reels |
-| `↑` / `↓` | Increase / decrease bet per line |
-| `←` / `→` | Decrease / increase number of active paylines |
-| `Q` | Quit (game is auto-saved) |
-
-### Reading the Display
-
-```
-┌────────┬────────┬────────┬────────┬────────┐
-│   🔴   │   K    │   💚   │   A    │   🟢   │
-├────────┼────────┼────────┼────────┼────────┤
-│   🐲   │   Q    │   🔵   │   10   │   🔴   │
-├────────┼────────┼────────┼────────┼────────┤
-│   A    │   🟣   │   J    │   K    │   Q    │
-└────────┴────────┴────────┴────────┴────────┘
-```
-
-- 🐲 **Wild** — Substitutes for all symbols except Bonus
-- 🔴 🔵 🟣 🟢 **Dragons** — Red, Blue, Purple, Green (highest value)
-- A K Q J 10 **Cards** — Ace, King, Queen, Jack, Ten (lower value)
-- 💚 **Bonus** — Green emerald scatter (appears on reels 2, 3, 4 only)
-- 🫧 **Mystery** — Pearl (resolves to a random symbol when the reels spin)
-
-The HUD below the grid shows your current credits, bet per line, active lines, total bet, and last win.
-
-### Winning
-
-Wins pay **left to right** on active paylines. You need **3 or more** matching symbols in a row starting from the leftmost reel. Wild counts as any symbol.
-
-Only the highest win per payline is paid. After a spin, winning lines flash to show you what hit.
-
-### Mystery Stacked Reels
-
-Each reel has hidden "mystery" positions. When you spin, all mystery positions on a single reel transform into the same randomly chosen symbol. This can create big stacked wins when multiple reels reveal the same symbol.
-
-### Dragon Spin Bonus
-
-Land **3 BNS** symbols on reels 2, 3, and 4 to trigger the Dragon Spin Bonus. A wheel spins to select one of three free game modes:
-
-#### Raining Wilds (5 free spins)
-3–10 Wild symbols randomly drop onto the reels before each spin. More wilds = more chances for big wins.
-
-#### Persisting Wilds (5 free spins)
-Wild symbols that appear get **locked in place** for the remaining free spins. By the final spin, the reels can be loaded with wilds.
-
-#### Reel Blast (5 free spins)
-Play on **3 reel sets simultaneously**, all sharing the same center reels (2, 3, 4). Three sets of wins evaluated per spin.
-
-### Paytable
-
-Payouts are multiplied by your bet per line:
-
-| Symbol | 5x | 4x | 3x |
-|--------|---:|---:|---:|
-| Wild | 50 | 20 | 5 |
-| Red Dragon | 50 | 20 | 5 |
-| Blue Dragon | 50 | 20 | 5 |
-| Purple Dragon | 50 | 20 | 5 |
-| Green Dragon | 50 | 20 | 5 |
-| Ace | 30 | 10 | 5 |
-| King | 20 | 10 | 2 |
-| Queen | 20 | 10 | 2 |
-| Jack | 20 | 10 | 2 |
-| Ten | 20 | 10 | 2 |
-
-**Scatter:** 3 Bonus symbols pay 30x your total bet (in addition to any line wins).
-
 ## Save Data
 
 Your game is saved automatically to `~/.dragon-spin/save.json` after every spin. This includes:
+
 - Credit balance and bet settings
 - Spin history (last 500 spins)
 - Session stats (total spins, total wagered, total won, biggest win)
 
 Delete `~/.dragon-spin/save.json` to reset.
+
+## Demo Mode
+
+Run the game in auto-play mode with `--demo`. The game skips all menus, auto-spins every few seconds, and auto-continues through bonus rounds and jackpot picks. It exits cleanly on `SIGTERM`.
+
+```bash
+dragon-spin --demo
+# or
+node dist/index.js --demo
+```
+
+Demo mode writes its PID to `/tmp/dragon-spin-demo.pid` so external tools can stop it:
+
+```bash
+kill $(cat /tmp/dragon-spin-demo.pid)
+```
+
+### Use as a Claude Code "thinking" animation
+
+You can configure [Claude Code](https://docs.anthropic.com/en/docs/claude-code) hooks to launch Dragon Spin in a separate terminal window while Claude is processing, then close it when Claude finishes responding.
+
+Add the following to your project's `.claude/settings.json` (or `~/.claude/settings.json` for global use):
+
+#### Terminal.app (macOS default)
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ ! -f /tmp/dragon-spin-demo.pid ] || ! kill -0 $(cat /tmp/dragon-spin-demo.pid) 2>/dev/null; then osascript -e 'tell application \"Terminal\" to do script \"dragon-spin --demo\"' >/dev/null 2>&1; fi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f /tmp/dragon-spin-demo.pid ]; then kill $(cat /tmp/dragon-spin-demo.pid) 2>/dev/null; rm -f /tmp/dragon-spin-demo.pid; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### iTerm2
+
+Replace the `UserPromptSubmit` command with:
+
+```
+osascript -e 'tell application "iTerm2" to create window with default profile command "dragon-spin --demo"'
+```
+
+#### Tips
+
+- If `dragon-spin` is not globally installed, replace it with the full path: `node /path/to/dragon-spin/dist/index.js --demo`
+- To auto-close the Terminal window when the game exits: Terminal.app > Settings > Profiles > Shell > "When the shell exits" > **Close the window**
+- The launch hook checks if a demo is already running to avoid opening duplicate windows
 
 ## Development
 

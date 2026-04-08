@@ -12,6 +12,7 @@ import {
 import { write, writeln, moveTo, clearScreen, clearLine, Color, colorize, hideCursor } from './terminal';
 import { waitForKey } from './input';
 import { GameState } from './types';
+import { demoWaitForKey } from './demo';
 
 const FREE_SPINS = 5;
 const GRID_START_ROW = 3;
@@ -73,7 +74,7 @@ async function runRainingWilds(state: GameState, rng: RNG): Promise<number> {
 
     writeln();
     write(colorize(`  Wilds placed: ${numWilds}   Spin win: ${result.totalWin}   Total bonus: ${totalWin}`, Color.brightYellow));
-    await waitForKey();
+    await demoWaitForKey(waitForKey, 1500);
   }
 
   return totalWin;
@@ -122,7 +123,7 @@ async function runPersistingWilds(state: GameState, rng: RNG): Promise<number> {
 
     writeln();
     write(colorize(`  Locked wilds: ${lockedWilds.size}   Spin win: ${result.totalWin}   Total bonus: ${totalWin}`, Color.brightMagenta));
-    await waitForKey();
+    await demoWaitForKey(waitForKey, 1500);
   }
 
   return totalWin;
@@ -174,7 +175,7 @@ async function runReelBlast(state: GameState, rng: RNG): Promise<number> {
     write(clearLine());
     write(colorize(`  Spin win: ${setWin}   Total bonus: ${totalWin}`, Color.brightCyan));
 
-    await waitForKey();
+    await demoWaitForKey(waitForKey, 1500);
   }
 
   return totalWin;

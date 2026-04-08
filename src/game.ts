@@ -14,6 +14,7 @@ import { waitForKey } from './input';
 import { runBonus } from './bonus';
 import { BonusMode } from './types';
 import { checkPearlSpawn, checkPotExplode, runJackpotGame, renderPearlPot } from './jackpot';
+import { demoMode, demoWaitForKey, cleanupPidFile } from './demo';
 
 const GRID_START_ROW = 3;
 const BET_OPTIONS = [1, 2, 5, 10, 25, 50, 100];
@@ -27,6 +28,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
 
   // Handle clean exit
   const cleanup = () => {
+    if (demoMode) cleanupPidFile();
     write(showCursor());
     process.exit(0);
   };
@@ -59,8 +61,14 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
     const controlsRow = (process.stdout.rows || 24) - 1;
     renderControls(controlsRow, gridCol);
 
-    // Wait for input
-    const key = await waitForKey();
+    // Wait for input (demo mode auto-spins after a delay)
+    let key: string;
+    if (demoMode) {
+      await sleep(2500);
+      key = ' ';
+    } else {
+      key = await waitForKey();
+    }
     const code = key.charCodeAt(0);
 
     // Ctrl+C
@@ -69,8 +77,8 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       break;
     }
 
-    // Q to quit
-    if (key === 'q' || key === 'Q') {
+    // Q to quit (disabled in demo mode — exit via SIGTERM only)
+    if ((key === 'q' || key === 'Q') && !demoMode) {
       running = false;
       break;
     }
@@ -106,6 +114,11 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
     // Space or Enter to spin
     if (key === ' ' || key === '\r' || key === '\n') {
       const totalBet = state.lines * state.betPerLine;
+
+      // Demo: auto-refill credits when running low
+      if (demoMode && state.credits < totalBet) {
+        state.credits = 1000;
+      }
 
       if (state.credits < totalBet) {
         continue;
@@ -176,8 +189,8 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
         state.history.splice(0, state.history.length - 500);
       }
 
-      // Auto-save
-      saveGame(state);
+      // Auto-save (suppressed in demo mode)
+      if (!demoMode) saveGame(state);
 
       // Pearl mechanic — animate pearl to pot if one spawned
       if (hasPearl) {
@@ -205,7 +218,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
           writeln(colorize('  🎰 THE POT HAS EXPLODED! 🎰', Color.brightYellow, Color.bold));
           writeln(colorize('  Jackpot Pick is starting...', Color.brightCyan));
           writeln(colorize('  Press any key to begin!', Color.dim));
-          await waitForKey();
+          await demoWaitForKey(waitForKey, 1500);
 
           const jackpotWin = await runJackpotGame(state, rng);
           state.credits += jackpotWin;
@@ -213,7 +226,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
           state.stats.jackpotWins++;
           if (jackpotWin > state.stats.biggestWin) state.stats.biggestWin = jackpotWin;
 
-          saveGame(state);
+          if (!demoMode) saveGame(state);
         }
       }
 
@@ -233,7 +246,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
 
         write(moveTo(14, 1));
         writeln(colorize('  Press any key to start...', Color.dim));
-        await waitForKey();
+        await demoWaitForKey(waitForKey, 1500);
 
         const mode = modeMap[chosenIdx];
         const bonusWin = await runBonus(mode, state, rng);
@@ -247,9 +260,9 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
         writeln(colorize(`  Total bonus winnings: ${bonusWin}`, Color.brightCyan));
         writeln();
         writeln(colorize('  Press any key to continue...', Color.dim));
-        await waitForKey();
+        await demoWaitForKey(waitForKey, 1500);
 
-        saveGame(state);
+        if (!demoMode) saveGame(state);
       }
     }
   }
@@ -264,5 +277,5 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
   writeln(`  Total spins: ${state.stats.spins}`);
   writeln(`  Biggest win: ${state.stats.biggestWin}`);
   writeln();
-  saveGame(state);
+  if (!demoMode) saveGame(state);
 }
