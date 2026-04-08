@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(chmod +x:*)",
+      "Bash(timeout 3 node dist/index.js)",
+      "Bash(gtimeout 3 node dist/index.js)",
+      "Bash(node:*)"
+    ]
+  }
+}
