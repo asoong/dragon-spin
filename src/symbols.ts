@@ -8,7 +8,7 @@ interface SymbolMeta {
 }
 
 const meta: Record<Sym, SymbolMeta> = {
-  [Sym.Wild]:         { label: ' 🐲', color: Color.brightYellow, display: '' },
+  [Sym.Wild]:         { label: 'WILD', color: Color.brightYellow, display: '' },
   [Sym.RedDragon]:    { label: ' 🔴', color: Color.brightRed,    display: '' },
   [Sym.BlueDragon]:   { label: ' 🔵', color: Color.brightBlue,   display: '' },
   [Sym.PurpleDragon]: { label: ' 🟣', color: Color.brightMagenta,display: '' },

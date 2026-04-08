@@ -4,14 +4,15 @@ import { spin } from './reels';
 import { evaluate } from './evaluator';
 import { MAX_LINES } from './paylines';
 import { saveGame } from './save';
-import { sleep, animateReelSpin, animateWins, animateCredits, animatePearlToPot, animatePotExplode } from './animator';
+import { sleep, animateReelSpin, animateWins, animateCredits, animatePearlToPot, animatePotExplode, animateMiniGameReel } from './animator';
 import {
   renderReelGrid, renderHUD, renderWinDetails, renderControls,
   getGridHeight,
 } from './renderer';
 import { write, writeln, moveTo, clearScreen, clearLine, hideCursor, showCursor, Color, colorize } from './terminal';
 import { waitForKey } from './input';
-import { spinDragonWheel, runBonus } from './bonus';
+import { runBonus } from './bonus';
+import { BonusMode } from './types';
 import { checkPearlSpawn, checkPotExplode, runJackpotGame, renderPearlPot } from './jackpot';
 
 const GRID_START_ROW = 3;
@@ -197,13 +198,20 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
         await sleep(500);
         write(clearScreen());
 
-        const mode = await spinDragonWheel(rng);
-
         writeln();
-        writeln(colorize(`  Entering ${mode.toUpperCase()} free games!`, Color.brightYellow, Color.bold));
+        writeln(colorize('  ★ ★ ★  DRAGON SPIN BONUS!  ★ ★ ★', Color.brightYellow, Color.bold));
+        writeln();
+
+        const dragonSpinModes = ['RAINING WILDS', 'PERSISTING WILDS', 'REEL BLAST'];
+        const modeMap: BonusMode[] = ['raining-wilds', 'persisting-wilds', 'reel-blast'];
+        const chosenIdx = rng.int(0, dragonSpinModes.length - 1);
+        await animateMiniGameReel(dragonSpinModes, chosenIdx, 6);
+
+        write(moveTo(14, 1));
         writeln(colorize('  Press any key to start...', Color.dim));
         await waitForKey();
 
+        const mode = modeMap[chosenIdx];
         const bonusWin = await runBonus(mode, state, rng);
         state.credits += bonusWin;
         state.stats.won += bonusWin;

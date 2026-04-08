@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 
 import { renderTitle } from './renderer';
-import { menu, prompt } from './input';
+import { menu, prompt, waitForKey } from './input';
 import { saveExists, loadGame, createFreshState } from './save';
-import { createRNG } from './rng';
+import { createRNG, RNG } from './rng';
 import { gameLoop } from './game';
 import { GameState } from './types';
-import { writeln, Color, colorize, showCursor, write, clearScreen, hideCursor } from './terminal';
+import { writeln, Color, colorize, showCursor, write, clearScreen, hideCursor, moveTo } from './terminal';
 import { runJackpotGame } from './jackpot';
+import { runBonus } from './bonus';
+import { BonusMode } from './types';
+import { saveGame } from './save';
+import { animateMiniGameReel } from './animator';
 
 const QUICK_PRESETS = [
   { name: 'Casual    — 1,000 credits, 30 lines, 1/line  (30/spin)',  credits: 1000, lines: 30, bet: 1  },
@@ -52,6 +56,52 @@ async function setupNewGame(): Promise<GameState> {
   return createFreshState(credits, lines, betPerLine);
 }
 
+async function playMiniGameMenu(state: GameState, rng: RNG): Promise<void> {
+  const choice = await menu('Choose a mini game:', [
+    'Jackpot Pick       — pick orbs to match 3 jackpot tiers',
+    'Dragon Spin Bonus  — spin the reel for a free games mode',
+  ]);
+
+  write(hideCursor());
+
+  let miniWin: number;
+  let gameName: string;
+
+  if (choice === 0) {
+    gameName = 'Jackpot Pick';
+    miniWin = await runJackpotGame(state, rng);
+    state.stats.jackpotWins++;
+  } else {
+    write(clearScreen());
+    writeln();
+    writeln(colorize('  ★ ★ ★  DRAGON SPIN BONUS!  ★ ★ ★', Color.brightYellow, Color.bold));
+    writeln();
+
+    const dragonSpinModes = ['RAINING WILDS', 'PERSISTING WILDS', 'REEL BLAST'];
+    const modeMap: BonusMode[] = ['raining-wilds', 'persisting-wilds', 'reel-blast'];
+    const chosenIdx = rng.int(0, dragonSpinModes.length - 1);
+    await animateMiniGameReel(dragonSpinModes, chosenIdx, 6);
+
+    gameName = dragonSpinModes[chosenIdx];
+    write(moveTo(14, 1));
+    writeln(colorize('  Press any key to start...', Color.dim));
+    await waitForKey();
+
+    miniWin = await runBonus(modeMap[chosenIdx], state, rng);
+  }
+
+  state.credits += miniWin;
+  state.stats.won += miniWin;
+  if (miniWin > state.stats.biggestWin) state.stats.biggestWin = miniWin;
+
+  write(showCursor());
+  write(clearScreen());
+  writeln(colorize(`\n  ${gameName} complete! Won ${miniWin} credits.`, Color.brightYellow, Color.bold));
+  writeln(colorize(`  Credits: ${state.credits}\n`, Color.dim));
+
+  saveGame(state);
+}
+
 async function main(): Promise<void> {
   const rng = createRNG();
 
@@ -64,7 +114,7 @@ async function main(): Promise<void> {
     const lastDate = new Date(saved.lastPlayed).toLocaleDateString();
     const choice = await menu(
       `Save found — ${saved.credits} credits, ${saved.stats.spins} spins (last played: ${lastDate})`,
-      ['Continue', 'New Game', 'Play Mini Game'],
+      ['Continue', 'New Game', 'Play Mini Games'],
     );
 
     if (choice === 0) {
@@ -73,37 +123,16 @@ async function main(): Promise<void> {
     } else if (choice === 1) {
       state = await setupNewGame();
     } else {
-      // Play Mini Game with saved state
-      state = saved;
-      write(hideCursor());
-      const jackpotWin = await runJackpotGame(state, rng);
-      state.credits += jackpotWin;
-      state.stats.won += jackpotWin;
-      state.stats.jackpotWins++;
-      if (jackpotWin > state.stats.biggestWin) state.stats.biggestWin = jackpotWin;
-      write(showCursor());
-      write(clearScreen());
-      writeln(colorize(`\n  Jackpot Pick complete! Won ${jackpotWin} credits.`, Color.brightYellow, Color.bold));
-      writeln(colorize(`  Credits: ${state.credits}\n`, Color.dim));
+      await playMiniGameMenu(saved, rng);
       return;
     }
   } else {
-    const choice = await menu('What would you like to do?', ['New Game', 'Play Mini Game']);
+    const choice = await menu('What would you like to do?', ['New Game', 'Play Mini Games']);
     if (choice === 0) {
       state = await setupNewGame();
     } else {
       state = await setupNewGame();
-      writeln(colorize('\n  Starting Jackpot Pick...', Color.brightYellow));
-      write(hideCursor());
-      const jackpotWin = await runJackpotGame(state, rng);
-      state.credits += jackpotWin;
-      state.stats.won += jackpotWin;
-      state.stats.jackpotWins++;
-      if (jackpotWin > state.stats.biggestWin) state.stats.biggestWin = jackpotWin;
-      write(showCursor());
-      write(clearScreen());
-      writeln(colorize(`\n  Jackpot Pick complete! Won ${jackpotWin} credits.`, Color.brightYellow, Color.bold));
-      writeln(colorize(`  Credits: ${state.credits}\n`, Color.dim));
+      await playMiniGameMenu(state, rng);
       return;
     }
   }

@@ -79,25 +79,6 @@ export async function animateWins(
 }
 
 /**
- * Animate the Dragon Spin bonus wheel.
- */
-export async function animateDragonWheel(
-  chosenIndex: number,
-): Promise<void> {
-  const options = ['RAINING WILDS', 'PERSISTING WILDS', 'REEL BLAST'];
-  const totalCycles = 20 + chosenIndex;
-
-  write('\n');
-  for (let i = 0; i < totalCycles; i++) {
-    const current = i % 3;
-    const speed = 50 + Math.floor((i / totalCycles) * 200); // slow down
-    write(`\r   >>> ${options[current].padEnd(20)} <<<   `);
-    await sleep(speed);
-  }
-  write(`\r   >>> ${options[chosenIndex].padEnd(20)} <<<   \n`);
-}
-
-/**
  * Animate a pearl appearing on the grid and flying to the pot.
  */
 export async function animatePearlToPot(
@@ -175,6 +156,126 @@ export async function animatePotExplode(
     await sleep(120);
   }
   await sleep(300);
+}
+
+/**
+ * Animate a horizontal mini game selector reel.
+ * Shows a scrolling strip of mini game names that decelerates and lands on the chosen one.
+ * The center position is the "selected" slot, framed by markers.
+ */
+const MINI_GAME_DESCRIPTIONS: Record<string, string[]> = {
+  'RAINING WILDS': [
+    '5 free spins — 3 to 10 random WILD placed each spin.',
+    'Wilds are held until all wins are evaluated.',
+    'Mystery stacks exclude WILD. No BONUS symbols.',
+  ],
+  'PERSISTING WILDS': [
+    '5 free spins — wilds lock in place for all remaining spins.',
+    'New wilds added each spin: 1-2, 1-2, 1-2, 1-3, then 2-7.',
+    'No regular WILD or BONUS. PERSISTING WILD only.',
+  ],
+  'REEL BLAST': [
+    '5 free spins on 3 reel sets simultaneously.',
+    'Reels 2, 3, and 4 are shared across all 3 sets.',
+    'Triple the winning opportunities! No BONUS symbols.',
+  ],
+};
+
+export async function animateMiniGameReel(
+  options: string[],
+  chosenIndex: number,
+  row: number,
+): Promise<void> {
+  const VISIBLE = 3; // show 3 slots: left | CENTER | right
+  const SLOT_W = 18;
+
+  // Build a long strip that ends with chosenIndex in the center
+  // Spin through 8 full cycles + land on chosen for a longer roll
+  const totalStops = options.length * 8 + chosenIndex;
+
+  // Draw the frame (static borders around center slot)
+  const frameRow = row;
+  const centerCol = Math.floor((process.stdout.columns || 80) / 2);
+  const leftEdge = centerCol - Math.floor((VISIBLE * SLOT_W) / 2);
+
+  // Top/bottom borders
+  const topBorder = '┌' + '─'.repeat(SLOT_W) + '┬' + '─'.repeat(SLOT_W) + '┬' + '─'.repeat(SLOT_W) + '┐';
+  const botBorder = '└' + '─'.repeat(SLOT_W) + '┴' + '─'.repeat(SLOT_W) + '┴' + '─'.repeat(SLOT_W) + '┘';
+
+  write(moveTo(frameRow, leftEdge));
+  write(colorize(topBorder, Color.brightYellow));
+  write(moveTo(frameRow + 2, leftEdge));
+  write(colorize(botBorder, Color.brightYellow));
+
+  // Arrow markers pointing to center
+  const arrowCol = leftEdge + SLOT_W + Math.floor(SLOT_W / 2);
+  write(moveTo(frameRow - 1, arrowCol));
+  write(colorize('  ▼', Color.brightYellow, Color.bold));
+  write(moveTo(frameRow + 3, arrowCol));
+  write(colorize('  ▲', Color.brightYellow, Color.bold));
+
+  for (let stop = 0; stop <= totalStops; stop++) {
+    const centerIdx = stop % options.length;
+    const leftIdx = (stop - 1 + options.length) % options.length;
+    const rightIdx = (stop + 1) % options.length;
+
+    const slots = [leftIdx, centerIdx, rightIdx];
+
+    // Render the 3 visible slots
+    write(moveTo(frameRow + 1, leftEdge));
+    let line = colorize('│', Color.brightYellow);
+    for (let s = 0; s < VISIBLE; s++) {
+      const name = options[slots[s]];
+      const padded = name.length > SLOT_W ? name.slice(0, SLOT_W) : name;
+      const leftPad = Math.floor((SLOT_W - padded.length) / 2);
+      const rightPad = SLOT_W - padded.length - leftPad;
+
+      if (s === 1) {
+        // Center slot — highlighted
+        line += colorize(' '.repeat(leftPad) + padded + ' '.repeat(rightPad), Color.bold, Color.brightWhite, Color.bgMagenta);
+      } else {
+        // Side slots — dimmed
+        line += colorize(' '.repeat(leftPad) + padded + ' '.repeat(rightPad), Color.dim);
+      }
+      line += colorize('│', Color.brightYellow);
+    }
+    write(line);
+
+    // Deceleration: fast for most of the roll, then dramatically slow down
+    const progress = stop / totalStops;
+    // Use a cubic curve so it stays fast longer and brakes hard at the end
+    const curve = progress * progress * progress;
+    const speed = 30 + Math.floor(curve * 600);
+    await sleep(speed);
+  }
+
+  // Final flash on the selected option
+  for (let flash = 0; flash < 3; flash++) {
+    write(moveTo(frameRow + 1, leftEdge + SLOT_W + 1));
+    const name = options[chosenIndex];
+    const padded = name.length > SLOT_W ? name.slice(0, SLOT_W) : name;
+    const leftPad = Math.floor((SLOT_W - padded.length) / 2);
+    const rightPad = SLOT_W - padded.length - leftPad;
+
+    write(colorize(' '.repeat(leftPad) + padded + ' '.repeat(rightPad), Color.bold, Color.brightYellow, Color.bgMagenta));
+    await sleep(200);
+    write(moveTo(frameRow + 1, leftEdge + SLOT_W + 1));
+    write(colorize(' '.repeat(leftPad) + padded + ' '.repeat(rightPad), Color.bold, Color.brightWhite, Color.bgMagenta));
+    await sleep(200);
+  }
+
+  // Show description of the selected mini game
+  const desc = MINI_GAME_DESCRIPTIONS[options[chosenIndex]];
+  if (desc) {
+    const descStartRow = frameRow + 5;
+    for (let i = 0; i < desc.length; i++) {
+      write(moveTo(descStartRow + i, leftEdge + 2));
+      write(clearLine());
+      write(colorize(`  ${desc[i]}`, Color.brightCyan));
+    }
+  }
+
+  await sleep(500);
 }
 
 /**

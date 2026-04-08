@@ -4,7 +4,7 @@ import { NUM_REELS, NUM_ROWS } from './paylines';
 import { spin, spinWithWilds, allPositions } from './reels';
 import { evaluate } from './evaluator';
 import { NON_WILD_SYMBOLS } from './symbols';
-import { sleep, animateReelSpin, animateWins, animateDragonWheel } from './animator';
+import { sleep, animateReelSpin, animateWins } from './animator';
 import {
   renderReelGrid, renderHUD, renderWinDetails, renderFreeSpinHeader,
   renderBonusAnnouncement, getGridHeight, renderControls,
@@ -16,20 +16,6 @@ import { GameState } from './types';
 const FREE_SPINS = 5;
 const GRID_START_ROW = 3;
 const GRID_START_COL = 3;
-
-/**
- * Spin the Dragon Spin wheel to pick a bonus mode.
- */
-export async function spinDragonWheel(rng: RNG): Promise<BonusMode> {
-  const modes: BonusMode[] = ['raining-wilds', 'persisting-wilds', 'reel-blast'];
-  const chosen = rng.int(0, 2);
-
-  renderBonusAnnouncement('Spinning the wheel...');
-  await animateDragonWheel(chosen);
-  await sleep(500);
-
-  return modes[chosen];
-}
 
 /**
  * Run the chosen bonus mode. Returns total bonus winnings.
