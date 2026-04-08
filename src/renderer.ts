@@ -3,7 +3,7 @@ import { getSymbolDisplay, highlightSymbol } from './symbols';
 import { NUM_REELS, NUM_ROWS } from './paylines';
 import { write, writeln, moveTo, clearScreen, clearLine, Color, colorize, pad } from './terminal';
 
-const CELL_WIDTH = 6;  // visible chars per cell
+const CELL_WIDTH = 8;  // visible chars per cell (wider for emoji)
 
 const BOX = {
   tl: '┌', tr: '┐', bl: '└', br: '┘',
@@ -34,8 +34,11 @@ export function renderReelGrid(
     for (let reel = 0; reel < NUM_REELS; reel++) {
       const sym = grid[reel][row];
       const key = `${reel},${row}`;
-      const display = highlights?.has(key) ? highlightSymbol(sym) : getSymbolDisplay(sym);
-      line += pad(display, CELL_WIDTH) + colorize(BOX.v, Color.cyan);
+      const isHighlighted = highlights?.has(key);
+      const display = isHighlighted ? highlightSymbol(sym) : getSymbolDisplay(sym);
+      const cell = pad(display, CELL_WIDTH);
+      // Fill entire cell background when highlighted
+      line += (isHighlighted ? Color.bgYellow + cell + Color.reset : cell) + colorize(BOX.v, Color.cyan);
     }
     lines.push(line);
 
@@ -88,7 +91,7 @@ export function renderWinDetails(wins: WinLine[], scatterWin: number, detailRow:
 
   const lines: string[] = [];
   for (const w of wins.slice(0, 5)) { // show up to 5 wins
-    lines.push(`  Line ${w.lineIndex + 1}: ${w.count}x ${w.symbol} = ${w.payout}`);
+    lines.push(`  Line ${w.lineIndex + 1}: ${w.count}x ${getSymbolDisplay(w.symbol)} = ${w.payout}`);
   }
   if (wins.length > 5) {
     lines.push(`  ... and ${wins.length - 5} more wins`);

@@ -66,13 +66,13 @@ export async function animateWins(
   gridStartRow: number,
   gridStartCol: number,
 ): Promise<void> {
-  for (let flash = 0; flash < 3; flash++) {
+  for (let flash = 0; flash < 4; flash++) {
     // Show highlighted
     renderReelGrid(grid, gridStartRow, gridStartCol, new Set(winPositions.map(p => `${p[0]},${p[1]}`)));
-    await sleep(250);
+    await sleep(300);
     // Show normal
     renderReelGrid(grid, gridStartRow, gridStartCol);
-    await sleep(150);
+    await sleep(200);
   }
   // End with highlighted
   renderReelGrid(grid, gridStartRow, gridStartCol, new Set(winPositions.map(p => `${p[0]},${p[1]}`)));

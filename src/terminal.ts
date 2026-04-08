@@ -73,9 +73,35 @@ export function colorize(text: string, ...codes: string[]): string {
   return codes.join('') + text + Color.reset;
 }
 
-export function pad(text: string, width: number, align: 'left' | 'center' | 'right' = 'center'): string {
+/**
+ * Estimate the display width of a string, accounting for emoji (2 columns each)
+ * and stripping ANSI escape codes.
+ */
+export function displayWidth(text: string): number {
   const stripped = text.replace(/\x1b\[[0-9;]*m/g, '');
-  const diff = width - stripped.length;
+  let w = 0;
+  for (const ch of stripped) {
+    const code = ch.codePointAt(0) ?? 0;
+    // Emoji and wide chars generally have codepoints above 0x1F000 or in specific ranges
+    // Also catch variation selectors (0xFE0F) and combining marks
+    if (code >= 0x1F000 || (code >= 0x2600 && code <= 0x27BF) || (code >= 0x2B50 && code <= 0x2B55) ||
+        (code >= 0x1F300 && code <= 0x1FAFF) || code === 0xFE0F || code === 0x20E3 ||
+        (code >= 0x1F170 && code <= 0x1F251)) {
+      w += 2;
+    } else if (code > 0x7F && code < 0xFE00) {
+      // Most other non-ASCII might be single width, skip variation selectors
+      w += 1;
+    } else if (code !== 0xFE0F && code !== 0x200D) {
+      // Skip zero-width joiners and variation selectors
+      w += 1;
+    }
+  }
+  return w;
+}
+
+export function pad(text: string, width: number, align: 'left' | 'center' | 'right' = 'center'): string {
+  const w = displayWidth(text);
+  const diff = width - w;
   if (diff <= 0) return text;
   if (align === 'left') return text + ' '.repeat(diff);
   if (align === 'right') return ' '.repeat(diff) + text;

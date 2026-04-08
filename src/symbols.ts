@@ -8,18 +8,18 @@ interface SymbolMeta {
 }
 
 const meta: Record<Sym, SymbolMeta> = {
-  [Sym.Wild]:         { label: 'WILD', color: Color.brightYellow, display: '' },
-  [Sym.RedDragon]:    { label: ' RED', color: Color.brightRed,    display: '' },
-  [Sym.BlueDragon]:   { label: ' BLU', color: Color.brightBlue,   display: '' },
-  [Sym.PurpleDragon]: { label: ' PUR', color: Color.brightMagenta,display: '' },
-  [Sym.GreenDragon]:  { label: ' GRN', color: Color.brightGreen,  display: '' },
-  [Sym.Ace]:          { label: '  A ', color: Color.white,        display: '' },
-  [Sym.King]:         { label: '  K ', color: Color.white,        display: '' },
-  [Sym.Queen]:        { label: '  Q ', color: Color.white,        display: '' },
-  [Sym.Jack]:         { label: '  J ', color: Color.white,        display: '' },
-  [Sym.Ten]:          { label: ' 10 ', color: Color.white,        display: '' },
-  [Sym.Bonus]:        { label: ' BNS', color: Color.brightCyan,   display: '' },
-  [Sym.Mystery]:      { label: ' ???', color: Color.dim,          display: '' },
+  [Sym.Wild]:         { label: ' 🐲', color: Color.brightYellow, display: '' },
+  [Sym.RedDragon]:    { label: ' 🔴', color: Color.brightRed,    display: '' },
+  [Sym.BlueDragon]:   { label: ' 🔵', color: Color.brightBlue,   display: '' },
+  [Sym.PurpleDragon]: { label: ' 🟣', color: Color.brightMagenta,display: '' },
+  [Sym.GreenDragon]:  { label: ' 🟢', color: Color.brightGreen,  display: '' },
+  [Sym.Ace]:          { label: '  A ', color: Color.brightRed,    display: '' },
+  [Sym.King]:         { label: '  K ', color: Color.brightYellow, display: '' },
+  [Sym.Queen]:        { label: '  Q ', color: Color.brightMagenta,display: '' },
+  [Sym.Jack]:         { label: '  J ', color: Color.brightCyan,   display: '' },
+  [Sym.Ten]:          { label: ' 10 ', color: Color.brightWhite,  display: '' },
+  [Sym.Bonus]:        { label: ' 💚', color: Color.brightGreen,  display: '' },
+  [Sym.Mystery]:      { label: ' 🫧', color: Color.white,        display: '' },
 };
 
 // Build display strings
@@ -42,7 +42,7 @@ export function getSymbolColor(sym: Sym): string {
 
 export function highlightSymbol(sym: Sym): string {
   const m = meta[sym];
-  return colorize(m.label, Color.bold, Color.bgYellow, Color.red);
+  return colorize(m.label, Color.bold, m.color, Color.bgYellow);
 }
 
 /** All regular symbols that can appear through mystery stacks (excludes Bonus, Mystery) */

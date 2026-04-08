@@ -11,17 +11,41 @@ A terminal-based recreation of the Dragon Spin slot machine.
 
 ## Quick Start
 
+### Play instantly (once published to npm)
+
 ```bash
+npx dragon-spin
+```
+
+That's it. No install, no build — npx downloads the package and runs it.
+
+### Play from source
+
+```bash
+git clone <repo-url>
+cd dragon-spin
 npm install
 npm run build
 npm start
 ```
 
-Or run directly after building:
+### Test npx locally (before publishing)
 
 ```bash
-node dist/index.js
+npm install
+npm run build
+npm link
+npx dragon-spin
 ```
+
+### Publish to npm
+
+```bash
+npm login
+npm publish
+```
+
+The `prepublishOnly` script auto-compiles TypeScript before publishing. The `files` field ensures only the compiled `dist/` is shipped — no source code, no `node_modules`.
 
 ## How to Play
 
@@ -48,19 +72,20 @@ When you launch, you'll be prompted to start a **New Game** or **Continue** a sa
 ### Reading the Display
 
 ```
-┌──────┬──────┬──────┬──────┬──────┐
-│ RED  │  K   │ BNS  │  A   │ GRN  │
-├──────┼──────┼──────┼──────┼──────┤
-│ WILD │  Q   │ BLU  │  10  │ RED  │
-├──────┼──────┼──────┼──────┼──────┤
-│  A   │ PUR  │  J   │  K   │  Q   │
-└──────┴──────┴──────┴──────┴──────┘
+┌────────┬────────┬────────┬────────┬────────┐
+│   🔴   │   K    │   💚   │   A    │   🟢   │
+├────────┼────────┼────────┼────────┼────────┤
+│   🐲   │   Q    │   🔵   │   10   │   🔴   │
+├────────┼────────┼────────┼────────┼────────┤
+│   A    │   🟣   │   J    │   K    │   Q    │
+└────────┴────────┴────────┴────────┴────────┘
 ```
 
-- **WILD** — Substitutes for all symbols except Bonus
-- **RED / BLU / PUR / GRN** — Dragon symbols (highest value)
-- **A / K / Q / J / 10** — Card symbols (lower value)
-- **BNS** — Bonus scatter (appears on reels 2, 3, 4 only)
+- 🐲 **Wild** — Substitutes for all symbols except Bonus
+- 🔴 🔵 🟣 🟢 **Dragons** — Red, Blue, Purple, Green (highest value)
+- A K Q J 10 **Cards** — Ace, King, Queen, Jack, Ten (lower value)
+- 💚 **Bonus** — Green emerald scatter (appears on reels 2, 3, 4 only)
+- 🫧 **Mystery** — Pearl (resolves to a random symbol when the reels spin)
 
 The HUD below the grid shows your current credits, bet per line, active lines, total bet, and last win.
 
