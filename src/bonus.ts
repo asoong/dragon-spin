@@ -68,8 +68,7 @@ async function runRainingWilds(state: GameState, rng: RNG): Promise<number> {
     renderWinDetails(result.wins, result.scatterWin, hudRow + 2);
 
     if (result.wins.length > 0) {
-      const allPos = result.wins.flatMap(w => w.positions);
-      await animateWins(grid, allPos, GRID_START_ROW, getCenteredCol());
+      await animateWins(grid, result.wins, GRID_START_ROW, getCenteredCol());
     }
 
     writeln();
@@ -118,8 +117,7 @@ async function runPersistingWilds(state: GameState, rng: RNG): Promise<number> {
     renderWinDetails(result.wins, result.scatterWin, hudRow + 2);
 
     if (result.wins.length > 0) {
-      const allPos = result.wins.flatMap(w => w.positions);
-      await animateWins(grid, allPos, GRID_START_ROW, getCenteredCol());
+      await animateWins(grid, result.wins, GRID_START_ROW, getCenteredCol());
     }
 
     writeln();
@@ -165,8 +163,7 @@ async function runReelBlast(state: GameState, rng: RNG): Promise<number> {
       setWin += result.totalWin;
 
       if (result.wins.length > 0) {
-        const allPos = result.wins.flatMap(w => w.positions);
-        await animateWins(setGrid, allPos, gridRow, getCenteredCol());
+        await animateWins(setGrid, result.wins, gridRow, getCenteredCol());
       }
     }
 

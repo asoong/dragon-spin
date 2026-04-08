@@ -1,9 +1,10 @@
 import { Sym, Grid, WinLine, GameState } from './types';
-import { getSymbolDisplay, highlightSymbol } from './symbols';
+import { getSymbolDisplay } from './symbols';
 import { NUM_REELS, NUM_ROWS } from './paylines';
 import { write, writeln, moveTo, clearScreen, clearLine, Color, colorize, pad } from './terminal';
 
-const CELL_WIDTH = 8;  // visible chars per cell (wider for emoji)
+const CELL_WIDTH = 10; // visible chars per cell (wider for emoji + line breathing room)
+const CELL_HEIGHT = 3; // top connector, symbol, bottom connector
 
 /** Total visual width of the grid in columns */
 export function getGridWidth(): number {
@@ -28,42 +29,180 @@ function horizontalBorder(left: string, mid: string, right: string): string {
 }
 
 /**
+ * For a given cell [reel, row], find all win line connections and return
+ * the incoming direction (from prev reel) and outgoing direction (to next reel).
+ * Returns arrays since multiple win lines can pass through the same cell.
+ */
+interface CellConnection {
+  incoming: number; // row diff from prev reel: -1=from above, 0=same, 1=from below, NaN=none
+  outgoing: number; // row diff to next reel: -1=going up, 0=same, 1=going down, NaN=none
+  color: string;
+}
+
+function getCellConnections(
+  reel: number,
+  row: number,
+  winLines: WinLine[],
+  lineColors: string[],
+): CellConnection[] {
+  const connections: CellConnection[] = [];
+
+  for (let wi = 0; wi < winLines.length; wi++) {
+    const wl = winLines[wi];
+    const color = lineColors[wi % lineColors.length];
+
+    const posIdx = wl.positions.findIndex(p => p[0] === reel && p[1] === row);
+    if (posIdx === -1) continue;
+
+    const incoming = posIdx > 0
+      ? wl.positions[posIdx][1] - wl.positions[posIdx - 1][1]
+      : NaN;
+
+    const outgoing = posIdx < wl.positions.length - 1
+      ? wl.positions[posIdx + 1][1] - wl.positions[posIdx][1]
+      : NaN;
+
+    connections.push({ incoming, outgoing, color });
+  }
+
+  return connections;
+}
+
+const WIN_LINE_COLORS = [
+  Color.brightWhite,
+];
+
+/**
+ * Build the symbol row content for a cell, including horizontal line segments
+ * that pass through the symbol when the line is horizontal.
+ */
+function buildSymbolRow(
+  sym: Sym,
+  connections: CellConnection[],
+): string {
+  const display = getSymbolDisplay(sym);
+  // CELL_WIDTH=10: [L1 L2 _ SYMBOL _ R1 R2] with spaces for breathing room
+  // Layout: 2 line chars + 1 space + 4 symbol + 1 space + 2 line chars = 10
+
+  let leftLine = '   ';   // 3 chars: 2 line + 1 space (or all spaces)
+  let rightLine = '   ';  // 3 chars: 1 space + 2 line (or all spaces)
+
+  for (const conn of connections) {
+    if (conn.incoming === 0) {
+      leftLine = colorize('──', Color.bold, conn.color) + ' ';
+    }
+    if (conn.outgoing === 0) {
+      rightLine = ' ' + colorize('──', Color.bold, conn.color);
+    }
+  }
+
+  const symPadded = pad(display, 4);
+  return leftLine + symPadded + rightLine;
+}
+
+/**
+ * Build a connector row (top or bottom of cell) showing diagonal line characters.
+ */
+function buildConnectorRow(
+  connections: CellConnection[],
+  position: 'top' | 'bottom',
+): string {
+  const chars = new Array(CELL_WIDTH).fill(' ');
+  const charColors = new Array(CELL_WIDTH).fill('');
+
+  for (const conn of connections) {
+    if (position === 'top') {
+      // Top-left: only \ when line came from above (incoming > 0)
+      if (conn.incoming > 0) {
+        chars[1] = '\\';
+        charColors[1] = conn.color;
+      }
+      // Top-right: only / when line going up to next reel (outgoing < 0)
+      if (conn.outgoing < 0) {
+        chars[CELL_WIDTH - 2] = '/';
+        charColors[CELL_WIDTH - 2] = conn.color;
+      }
+    } else {
+      // Bottom-left: only / when line came from below (incoming < 0)
+      if (conn.incoming < 0) {
+        chars[1] = '/';
+        charColors[1] = conn.color;
+      }
+      // Bottom-right: only \ when line going down to next reel (outgoing > 0)
+      if (conn.outgoing > 0) {
+        chars[CELL_WIDTH - 2] = '\\';
+        charColors[CELL_WIDTH - 2] = conn.color;
+      }
+    }
+  }
+
+  let result = '';
+  for (let i = 0; i < CELL_WIDTH; i++) {
+    if (charColors[i]) {
+      result += colorize(chars[i], Color.bold, charColors[i]);
+    } else {
+      result += chars[i];
+    }
+  }
+  return result;
+}
+
+/**
  * Render the reel grid at a specific screen position.
+ * Each cell is 3 rows tall: top connector, symbol, bottom connector.
+ * winLines: optional winning paylines to draw line connectors.
  */
 export function renderReelGrid(
   grid: Grid,
   startRow: number,
   startCol: number,
-  highlights?: Set<string>,
+  winLines?: WinLine[],
 ): void {
-  const lines: string[] = [];
+  const outputLines: string[] = [];
+  const wl = winLines ?? [];
 
-  lines.push(colorize(horizontalBorder(BOX.tl, BOX.tj, BOX.tr), Color.cyan));
+  outputLines.push(colorize(horizontalBorder(BOX.tl, BOX.tj, BOX.tr), Color.cyan));
 
   for (let row = 0; row < NUM_ROWS; row++) {
-    let line = colorize(BOX.v, Color.cyan);
+    // Top connector row
+    let topLine = colorize(BOX.v, Color.cyan);
+    for (let reel = 0; reel < NUM_REELS; reel++) {
+      const conns = getCellConnections(reel, row, wl, WIN_LINE_COLORS);
+      topLine += buildConnectorRow(conns, 'top');
+      topLine += colorize(BOX.v, Color.cyan);
+    }
+    outputLines.push(topLine);
+
+    // Symbol row with horizontal line segments
+    let symLine = colorize(BOX.v, Color.cyan);
     for (let reel = 0; reel < NUM_REELS; reel++) {
       const sym = grid[reel][row];
-      const key = `${reel},${row}`;
-      const isHighlighted = highlights?.has(key);
-      const display = isHighlighted ? highlightSymbol(sym) : getSymbolDisplay(sym);
-      const cell = pad(display, CELL_WIDTH);
-      // Fill entire cell background when highlighted
-      line += (isHighlighted ? Color.bgYellow + cell + Color.reset : cell) + colorize(BOX.v, Color.cyan);
+      const conns = getCellConnections(reel, row, wl, WIN_LINE_COLORS);
+      symLine += buildSymbolRow(sym, conns);
+      symLine += colorize(BOX.v, Color.cyan);
     }
-    lines.push(line);
+    outputLines.push(symLine);
+
+    // Bottom connector row
+    let botLine = colorize(BOX.v, Color.cyan);
+    for (let reel = 0; reel < NUM_REELS; reel++) {
+      const conns = getCellConnections(reel, row, wl, WIN_LINE_COLORS);
+      botLine += buildConnectorRow(conns, 'bottom');
+      botLine += colorize(BOX.v, Color.cyan);
+    }
+    outputLines.push(botLine);
 
     if (row < NUM_ROWS - 1) {
-      lines.push(colorize(horizontalBorder(BOX.lj, BOX.cross, BOX.rj), Color.cyan));
+      outputLines.push(colorize(horizontalBorder(BOX.lj, BOX.cross, BOX.rj), Color.cyan));
     }
   }
 
-  lines.push(colorize(horizontalBorder(BOX.bl, BOX.bj, BOX.br), Color.cyan));
+  outputLines.push(colorize(horizontalBorder(BOX.bl, BOX.bj, BOX.br), Color.cyan));
 
-  for (let i = 0; i < lines.length; i++) {
+  for (let i = 0; i < outputLines.length; i++) {
     write(moveTo(startRow + i, startCol));
     write(clearLine());
-    write(lines[i]);
+    write(outputLines[i]);
   }
 }
 
@@ -182,5 +321,8 @@ export function renderFreeSpinHeader(mode: string, spinNum: number, totalSpins: 
  * Get the grid height in terminal rows.
  */
 export function getGridHeight(): number {
-  return NUM_ROWS * 2 + 1; // rows + borders
+  // Each row = 3 lines (top connector, symbol, bottom connector)
+  // Plus borders between rows and top/bottom borders
+  // = top border + (3 rows × 3 lines) + (2 mid borders) + bottom border
+  return 1 + NUM_ROWS * CELL_HEIGHT + (NUM_ROWS - 1) + 1;
 }

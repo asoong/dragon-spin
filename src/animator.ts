@@ -1,4 +1,4 @@
-import { Sym, Grid } from './types';
+import { Sym, Grid, WinLine } from './types';
 import { RNG } from './rng';
 import { NUM_REELS, NUM_ROWS } from './paylines';
 import { MYSTERY_SYMBOLS } from './symbols';
@@ -58,24 +58,17 @@ export async function animateReelSpin(
 }
 
 /**
- * Flash winning positions on the grid.
+ * Show winning paylines on the grid with line connectors.
  */
 export async function animateWins(
   grid: Grid,
-  winPositions: [number, number][],
+  winLines: WinLine[],
   gridStartRow: number,
   gridStartCol: number,
 ): Promise<void> {
-  for (let flash = 0; flash < 4; flash++) {
-    // Show highlighted
-    renderReelGrid(grid, gridStartRow, gridStartCol, new Set(winPositions.map(p => `${p[0]},${p[1]}`)));
-    await sleep(300);
-    // Show normal
-    renderReelGrid(grid, gridStartRow, gridStartCol);
-    await sleep(200);
-  }
-  // End with highlighted
-  renderReelGrid(grid, gridStartRow, gridStartCol, new Set(winPositions.map(p => `${p[0]},${p[1]}`)));
+  // Show grid with all win lines drawn
+  renderReelGrid(grid, gridStartRow, gridStartCol, winLines);
+  await sleep(2000);
 }
 
 /**
@@ -251,7 +244,7 @@ export async function animateMiniGameReel(
 
   // Final flash on the selected option
   for (let flash = 0; flash < 3; flash++) {
-    write(moveTo(frameRow + 1, leftEdge + SLOT_W + 1));
+    write(moveTo(frameRow + 1, leftEdge + SLOT_W + 2));
     const name = options[chosenIndex];
     const padded = name.length > SLOT_W ? name.slice(0, SLOT_W) : name;
     const leftPad = Math.floor((SLOT_W - padded.length) / 2);
@@ -259,7 +252,7 @@ export async function animateMiniGameReel(
 
     write(colorize(' '.repeat(leftPad) + padded + ' '.repeat(rightPad), Color.bold, Color.brightYellow, Color.bgMagenta));
     await sleep(200);
-    write(moveTo(frameRow + 1, leftEdge + SLOT_W + 1));
+    write(moveTo(frameRow + 1, leftEdge + SLOT_W + 2));
     write(colorize(' '.repeat(leftPad) + padded + ' '.repeat(rightPad), Color.bold, Color.brightWhite, Color.bgMagenta));
     await sleep(200);
   }

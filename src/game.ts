@@ -124,8 +124,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       renderWinDetails(result.wins, result.scatterWin, hudRow + 2, gridCol);
 
       if (result.wins.length > 0) {
-        const allPos = result.wins.flatMap(w => w.positions);
-        await animateWins(grid, allPos, GRID_START_ROW, gridCol);
+        await animateWins(grid, result.wins, GRID_START_ROW, gridCol);
       }
 
       // Award winnings
