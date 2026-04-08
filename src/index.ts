@@ -6,7 +6,8 @@ import { saveExists, loadGame, createFreshState } from './save';
 import { createRNG } from './rng';
 import { gameLoop } from './game';
 import { GameState } from './types';
-import { writeln, Color, colorize, showCursor, write } from './terminal';
+import { writeln, Color, colorize, showCursor, write, clearScreen, hideCursor } from './terminal';
+import { runJackpotGame } from './jackpot';
 
 const QUICK_PRESETS = [
   { name: 'Casual    — 1,000 credits, 30 lines, 1/line  (30/spin)',  credits: 1000, lines: 30, bet: 1  },
@@ -63,17 +64,48 @@ async function main(): Promise<void> {
     const lastDate = new Date(saved.lastPlayed).toLocaleDateString();
     const choice = await menu(
       `Save found — ${saved.credits} credits, ${saved.stats.spins} spins (last played: ${lastDate})`,
-      ['Continue', 'New Game'],
+      ['Continue', 'New Game', 'Play Mini Game'],
     );
 
     if (choice === 0) {
       state = saved;
       writeln(colorize('\n  Resuming game...', Color.brightGreen));
-    } else {
+    } else if (choice === 1) {
       state = await setupNewGame();
+    } else {
+      // Play Mini Game with saved state
+      state = saved;
+      write(hideCursor());
+      const jackpotWin = await runJackpotGame(state, rng);
+      state.credits += jackpotWin;
+      state.stats.won += jackpotWin;
+      state.stats.jackpotWins++;
+      if (jackpotWin > state.stats.biggestWin) state.stats.biggestWin = jackpotWin;
+      write(showCursor());
+      write(clearScreen());
+      writeln(colorize(`\n  Jackpot Pick complete! Won ${jackpotWin} credits.`, Color.brightYellow, Color.bold));
+      writeln(colorize(`  Credits: ${state.credits}\n`, Color.dim));
+      return;
     }
   } else {
-    state = await setupNewGame();
+    const choice = await menu('What would you like to do?', ['New Game', 'Play Mini Game']);
+    if (choice === 0) {
+      state = await setupNewGame();
+    } else {
+      state = await setupNewGame();
+      writeln(colorize('\n  Starting Jackpot Pick...', Color.brightYellow));
+      write(hideCursor());
+      const jackpotWin = await runJackpotGame(state, rng);
+      state.credits += jackpotWin;
+      state.stats.won += jackpotWin;
+      state.stats.jackpotWins++;
+      if (jackpotWin > state.stats.biggestWin) state.stats.biggestWin = jackpotWin;
+      write(showCursor());
+      write(clearScreen());
+      writeln(colorize(`\n  Jackpot Pick complete! Won ${jackpotWin} credits.`, Color.brightYellow, Color.bold));
+      writeln(colorize(`  Credits: ${state.credits}\n`, Color.dim));
+      return;
+    }
   }
 
   await gameLoop(state, rng);

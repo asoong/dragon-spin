@@ -4,7 +4,7 @@ import { spin } from './reels';
 import { evaluate } from './evaluator';
 import { MAX_LINES } from './paylines';
 import { saveGame } from './save';
-import { sleep, animateReelSpin, animateWins, animateCredits } from './animator';
+import { sleep, animateReelSpin, animateWins, animateCredits, animatePearlToPot, animatePotExplode } from './animator';
 import {
   renderReelGrid, renderHUD, renderWinDetails, renderControls,
   getGridHeight,
@@ -12,6 +12,7 @@ import {
 import { write, writeln, moveTo, clearScreen, clearLine, hideCursor, showCursor, Color, colorize } from './terminal';
 import { waitForKey } from './input';
 import { spinDragonWheel, runBonus } from './bonus';
+import { checkPearlSpawn, checkPotExplode, runJackpotGame, renderPearlPot } from './jackpot';
 
 const GRID_START_ROW = 3;
 const GRID_START_COL = 3;
@@ -45,6 +46,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
 
     const hudRow = GRID_START_ROW + getGridHeight() + 1;
     renderHUD(state, lastWin, hudRow);
+    renderPearlPot(state.pearlCount, hudRow + 2, 1);
     renderControls(hudRow + 10);
 
     // Wait for input
@@ -153,6 +155,42 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
 
       // Auto-save
       saveGame(state);
+
+      // Pearl mechanic — check for pearl spawn
+      if (checkPearlSpawn(rng)) {
+        const pearlReel = rng.int(0, 4);
+        const pearlRow = rng.int(0, 2);
+        const potRow = hudRow + 2;
+        const potCol = 4;
+
+        await animatePearlToPot(pearlReel, pearlRow, GRID_START_ROW, GRID_START_COL, potRow, potCol);
+
+        state.pearlCount++;
+        renderPearlPot(state.pearlCount, potRow, 1);
+
+        // Check if pot explodes
+        if (checkPotExplode(state.pearlCount, rng)) {
+          await sleep(500);
+          await animatePotExplode(potRow, potCol);
+
+          state.pearlCount = 0;
+
+          write(clearScreen());
+          writeln();
+          writeln(colorize('  🏺 THE POT HAS EXPLODED! 🏺', Color.brightYellow, Color.bold));
+          writeln(colorize('  Jackpot Pick is starting...', Color.brightCyan));
+          writeln(colorize('  Press any key to begin!', Color.dim));
+          await waitForKey();
+
+          const jackpotWin = await runJackpotGame(state, rng);
+          state.credits += jackpotWin;
+          state.stats.won += jackpotWin;
+          state.stats.jackpotWins++;
+          if (jackpotWin > state.stats.biggestWin) state.stats.biggestWin = jackpotWin;
+
+          saveGame(state);
+        }
+      }
 
       // Bonus trigger
       if (result.bonusTriggered) {

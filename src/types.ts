@@ -15,6 +15,8 @@ export enum Sym {
 
 export type BonusMode = 'raining-wilds' | 'persisting-wilds' | 'reel-blast';
 
+export type JackpotTier = 'mini' | 'minor' | 'major' | 'jackpot';
+
 export type Grid = Sym[][];  // [reel][row] — 5 reels, 3 rows
 
 export interface WinLine {
@@ -40,6 +42,7 @@ export interface GameState {
   betPerLine: number;
   history: SpinRecord[];
   stats: SessionStats;
+  pearlCount: number;
   lastPlayed: string;
 }
 
@@ -56,4 +59,5 @@ export interface SessionStats {
   wagered: number;
   won: number;
   biggestWin: number;
+  jackpotWins: number;
 }

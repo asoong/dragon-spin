@@ -2,7 +2,7 @@ import { Sym, Grid } from './types';
 import { RNG } from './rng';
 import { NUM_REELS, NUM_ROWS } from './paylines';
 import { MYSTERY_SYMBOLS } from './symbols';
-import { write, moveTo } from './terminal';
+import { write, moveTo, clearLine, Color, colorize } from './terminal';
 import { renderReelGrid } from './renderer';
 
 export function sleep(ms: number): Promise<void> {
@@ -95,6 +95,86 @@ export async function animateDragonWheel(
     await sleep(speed);
   }
   write(`\r   >>> ${options[chosenIndex].padEnd(20)} <<<   \n`);
+}
+
+/**
+ * Animate a pearl appearing on the grid and flying to the pot.
+ */
+export async function animatePearlToPot(
+  pearlReel: number,
+  pearlRow: number,
+  gridStartRow: number,
+  gridStartCol: number,
+  potRow: number,
+  potCol: number,
+): Promise<void> {
+  const CELL_WIDTH = 8;
+  const startR = gridStartRow + 1 + pearlRow * 2; // account for borders
+  const startC = gridStartCol + 1 + pearlReel * (CELL_WIDTH + 1);
+
+  // Flash pearl on the grid cell
+  for (let flash = 0; flash < 3; flash++) {
+    write(moveTo(startR, startC));
+    write(colorize(' 🦪  ', Color.bold, Color.bgCyan));
+    await sleep(150);
+    write(moveTo(startR, startC));
+    write('        ');
+    await sleep(100);
+  }
+
+  // Fly pearl from grid position to pot
+  const steps = 8;
+  const dr = (potRow - startR) / steps;
+  const dc = (potCol - startC) / steps;
+
+  for (let i = 0; i <= steps; i++) {
+    const r = Math.round(startR + dr * i);
+    const c = Math.round(startC + dc * i);
+
+    // Clear previous position
+    if (i > 0) {
+      const prevR = Math.round(startR + dr * (i - 1));
+      const prevC = Math.round(startC + dc * (i - 1));
+      write(moveTo(prevR, prevC));
+      write('  ');
+    }
+
+    write(moveTo(r, c));
+    write(colorize('🦪', Color.bold));
+    await sleep(50);
+  }
+
+  // Clear final position
+  write(moveTo(Math.round(potRow), Math.round(potCol)));
+  write('  ');
+}
+
+/**
+ * Animate the pot exploding.
+ */
+export async function animatePotExplode(
+  potRow: number,
+  potCol: number,
+): Promise<void> {
+  const frames = [
+    ['     🏺     '],
+    ['    💥🏺💥    '],
+    ['   💥💥💥💥💥   '],
+    ['  ✨💥🔥💥✨  '],
+    [' ✨✨🔥🔥🔥✨✨ '],
+    ['✨✨✨🔥🔥🔥✨✨✨'],
+    ['  ✨✨💫💫✨✨  '],
+    ['    ✨💫✨    '],
+    ['      ★      '],
+  ];
+
+  for (const frame of frames) {
+    write(moveTo(potRow, potCol - 6));
+    write(clearLine());
+    write(colorize(frame[0], Color.brightYellow, Color.bold));
+    await sleep(120);
+  }
+  await sleep(300);
 }
 
 /**

@@ -22,7 +22,11 @@ export function loadGame(): GameState | null {
   if (!saveExists()) return null;
   try {
     const data = fs.readFileSync(SAVE_FILE, 'utf-8');
-    return JSON.parse(data) as GameState;
+    const parsed = JSON.parse(data) as GameState;
+    // Backward compatibility for saves without pearl/jackpot fields
+    if (parsed.pearlCount === undefined) parsed.pearlCount = 0;
+    if (parsed.stats.jackpotWins === undefined) parsed.stats.jackpotWins = 0;
+    return parsed;
   } catch {
     return null;
   }
@@ -40,7 +44,8 @@ export function createFreshState(credits: number, lines: number, betPerLine: num
     lines,
     betPerLine,
     history: [],
-    stats: { spins: 0, wagered: 0, won: 0, biggestWin: 0 },
+    pearlCount: 0,
+    stats: { spins: 0, wagered: 0, won: 0, biggestWin: 0, jackpotWins: 0 },
     lastPlayed: new Date().toISOString(),
   };
 }
