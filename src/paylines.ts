@@ -38,4 +38,4 @@ export const PAYLINES: readonly number[][] = [
 
 export const NUM_REELS = 5;
 export const NUM_ROWS = 3;
-export const MAX_LINES = PAYLINES.length;
+export const MAX_LINES = 23;

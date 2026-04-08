@@ -21,6 +21,7 @@ const BET_OPTIONS = [1, 2, 5, 10, 25, 50, 100];
 export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
   let lastWin = 0;
   let lastWinLines: WinLine[] = [];
+  let lastScatterWin = 0;
   let lastGrid: Grid | null = null;
   let running = true;
 
@@ -52,6 +53,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
     const hudRow = GRID_START_ROW + getGridHeight() + 1;
     renderHUD(state, lastWin, hudRow, gridCol);
     renderPearlPot(state.pearlCount, hudRow + 3, gridCol);
+    renderWinDetails(lastWinLines, lastScatterWin, hudRow + 5, gridCol);
     const controlsRow = (process.stdout.rows || 24) - 1;
     renderControls(controlsRow, gridCol);
 
@@ -114,6 +116,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       state.credits -= totalBet;
       lastWin = 0;
       lastWinLines = [];
+      lastScatterWin = 0;
       lastGrid = null;
       renderHUD(state, 0, hudRow, gridCol);
 
@@ -136,7 +139,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       const result = evaluate(grid, state.lines, state.betPerLine);
 
       // Show wins
-      renderWinDetails(result.wins, result.scatterWin, hudRow + 2, gridCol);
+      renderWinDetails(result.wins, result.scatterWin, hudRow + 5, gridCol);
 
       if (result.wins.length > 0) {
         await animateWins(grid, result.wins, GRID_START_ROW, gridCol);
@@ -145,6 +148,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       // Store grid and win lines so they persist on screen
       lastGrid = grid;
       lastWinLines = result.wins;
+      lastScatterWin = result.scatterWin;
 
       // Award winnings
       lastWin = result.totalWin;

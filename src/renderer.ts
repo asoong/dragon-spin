@@ -62,13 +62,15 @@ export function getCellConnections(
       ? wl.positions[posIdx + 1][1] - wl.positions[posIdx][1]
       : NaN;
 
-    // Only draw connectors for single-row jumps (0 or ±1)
-    // Skip if either side has a multi-row jump (±2)
-    const inValid = isNaN(incoming) || (incoming >= -1 && incoming <= 1);
-    const outValid = isNaN(outgoing) || (outgoing >= -1 && outgoing <= 1);
-    if (!inValid || !outValid) continue;
-
-    connections.push({ incoming, outgoing, color });
+    // Independently suppress each direction for multi-row jumps (±2).
+    // This avoids orphaned connectors: if outgoing is valid but the next
+    // cell's incoming would be a multi-row jump, the next cell simply
+    // won't draw its incoming — but we still draw the valid side here.
+    connections.push({
+      incoming: (isNaN(incoming) || (incoming >= -1 && incoming <= 1)) ? incoming : NaN,
+      outgoing: (isNaN(outgoing) || (outgoing >= -1 && outgoing <= 1)) ? outgoing : NaN,
+      color,
+    });
   }
 
   return connections;
@@ -230,7 +232,8 @@ export function renderHUD(state: GameState, lastWin: number, hudRow: number, col
     colorize(` (${toDollars(state.credits)})`, Color.brightYellow) +
     colorize('   Bet/Line: ', Color.dim) + colorize(String(state.betPerLine), Color.white) +
     colorize('   Lines: ', Color.dim) + colorize(String(state.lines), Color.white) +
-    colorize('   Total Bet: ', Color.dim) + colorize(String(totalBet), Color.brightWhite)
+    colorize('   Total Bet: ', Color.dim) + colorize(String(totalBet), Color.brightWhite) +
+    colorize(` (${toDollars(totalBet)})`, Color.white)
   );
 
   write(moveTo(hudRow + 1, c));
@@ -245,29 +248,37 @@ export function renderHUD(state: GameState, lastWin: number, hudRow: number, col
  */
 export function renderWinDetails(wins: WinLine[], scatterWin: number, detailRow: number, col?: number): void {
   const c = col ?? getCenteredCol();
+  const colWidth = Math.floor(getGridWidth() / 2);
 
-  write(moveTo(detailRow, c));
+  // Clear the win detail area (up to 6 rows)
+  for (let i = 0; i < 6; i++) {
+    write(moveTo(detailRow + i, c));
+    write(clearLine());
+  }
 
   if (wins.length === 0 && scatterWin === 0) {
-    write(clearLine());
     return;
   }
 
-  const lines: string[] = [];
-  for (const w of wins.slice(0, 5)) { // show up to 5 wins
-    lines.push(`Line ${w.lineIndex + 1}: ${w.count}x ${getSymbolDisplay(w.symbol)} = ${w.payout}`);
+  const entries: string[] = [];
+  for (const w of wins.slice(0, 10)) { // show up to 10 wins across 2 columns
+    entries.push(`Line ${w.lineIndex + 1}: ${w.count}x ${getSymbolDisplay(w.symbol)} = ${w.payout}`);
   }
-  if (wins.length > 5) {
-    lines.push(`... and ${wins.length - 5} more wins`);
+  if (wins.length > 10) {
+    entries.push(`... +${wins.length - 10} more`);
   }
   if (scatterWin > 0) {
-    lines.push(colorize(`SCATTER BONUS! +${scatterWin}`, Color.brightCyan, Color.bold));
+    entries.push(colorize(`SCATTER! +${scatterWin}`, Color.brightCyan, Color.bold));
   }
 
-  for (let i = 0; i < 8; i++) {
+  // Render in 2 columns
+  const rows = Math.ceil(entries.length / 2);
+  for (let i = 0; i < rows; i++) {
     write(moveTo(detailRow + i, c));
-    write(clearLine());
-    if (i < lines.length) write(lines[i]);
+    const left = pad(entries[i], colWidth, 'left');
+    const rightIdx = i + rows;
+    const right = rightIdx < entries.length ? entries[rightIdx] : '';
+    write(left + right);
   }
 }
 
