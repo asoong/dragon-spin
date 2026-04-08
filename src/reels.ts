@@ -38,6 +38,11 @@ const BASE_STRIPS: Sym[][] = [
    M, M, M, Sym.Queen, Sym.GreenDragon, Sym.Ace, Sym.Jack, Sym.PurpleDragon, Sym.Ten, Sym.King],
 ];
 
+/** Reel strips for free-spin bonus games — Bonus symbols replaced with Ten. */
+const FREE_SPIN_STRIPS: Sym[][] = BASE_STRIPS.map(strip =>
+  strip.map(sym => sym === Sym.Bonus ? Sym.Ten : sym)
+);
+
 /**
  * Pick a random window of NUM_ROWS symbols from a reel strip (wrapping).
  */
@@ -99,7 +104,7 @@ export function spinWithWilds(
   rng: RNG,
   wildPositions: [number, number][],
 ): { grid: Grid; mysteryResolutions: (Sym | null)[] } {
-  const { grid, mysteryResolutions } = spin(rng, { mysteryPool: NON_WILD_SYMBOLS });
+  const { grid, mysteryResolutions } = spin(rng, { strips: FREE_SPIN_STRIPS, mysteryPool: NON_WILD_SYMBOLS });
 
   for (const [reel, row] of wildPositions) {
     grid[reel][row] = Sym.Wild;
@@ -121,4 +126,4 @@ export function allPositions(): [number, number][] {
   return positions;
 }
 
-export { BASE_STRIPS };
+export { BASE_STRIPS, FREE_SPIN_STRIPS };

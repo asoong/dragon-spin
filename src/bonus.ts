@@ -1,7 +1,7 @@
 import { Sym, Grid, BonusMode, WinLine } from './types';
 import { RNG } from './rng';
 import { NUM_REELS, NUM_ROWS } from './paylines';
-import { spin, spinWithWilds, allPositions } from './reels';
+import { spin, spinWithWilds, allPositions, FREE_SPIN_STRIPS } from './reels';
 import { evaluate } from './evaluator';
 import { NON_WILD_SYMBOLS, MYSTERY_SYMBOLS } from './symbols';
 import { sleep, animateReelSpin, animateWins } from './animator';
@@ -143,8 +143,8 @@ async function runReelBlast(state: GameState, rng: RNG): Promise<number> {
       const centerReel: Sym[] = Array(NUM_ROWS).fill(centerSymbol);
 
       const setGrid: Grid = [];
-      const leftSpin = spin(rng);
-      const rightSpin = spin(rng);
+      const leftSpin = spin(rng, { strips: FREE_SPIN_STRIPS });
+      const rightSpin = spin(rng, { strips: FREE_SPIN_STRIPS });
 
       setGrid[0] = leftSpin.grid[0];        // independent reel 1
       setGrid[1] = [...centerReel];          // center — all same symbol for this set
