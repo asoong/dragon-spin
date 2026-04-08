@@ -8,18 +8,20 @@ interface SymbolMeta {
 }
 
 const meta: Record<Sym, SymbolMeta> = {
-  [Sym.Wild]:         { label: 'WILD', color: Color.brightYellow, display: '' },
-  [Sym.RedDragon]:    { label: ' 🔴', color: Color.brightRed,    display: '' },
-  [Sym.BlueDragon]:   { label: ' 🔵', color: Color.brightBlue,   display: '' },
-  [Sym.PurpleDragon]: { label: ' 🟣', color: Color.brightMagenta,display: '' },
-  [Sym.GreenDragon]:  { label: ' 🟢', color: Color.brightGreen,  display: '' },
-  [Sym.Ace]:          { label: '  A ', color: Color.brightRed,    display: '' },
-  [Sym.King]:         { label: '  K ', color: Color.brightYellow, display: '' },
-  [Sym.Queen]:        { label: '  Q ', color: Color.brightMagenta,display: '' },
-  [Sym.Jack]:         { label: '  J ', color: Color.brightCyan,   display: '' },
-  [Sym.Ten]:          { label: ' 10 ', color: Color.brightWhite,  display: '' },
-  [Sym.Bonus]:        { label: ' 💚', color: Color.brightGreen,  display: '' },
-  [Sym.Mystery]:      { label: ' 🫧', color: Color.white,        display: '' },
+  [Sym.Wild]:         { label: ' WLD ', color: Color.brightYellow, display: '' },
+  [Sym.RedDragon]:    { label: '  🔴', color: Color.brightRed,    display: '' },
+  [Sym.BlueDragon]:   { label: '  🔵', color: Color.brightBlue,   display: '' },
+  [Sym.PurpleDragon]: { label: '  🟣', color: Color.brightMagenta,display: '' },
+  [Sym.GreenDragon]:  { label: '  🟢', color: Color.brightGreen,  display: '' },
+  [Sym.Ace]:          { label: '  A  ', color: Color.brightRed,    display: '' },
+  [Sym.King]:         { label: '  K  ', color: Color.brightYellow, display: '' },
+  [Sym.Queen]:        { label: '  Q  ', color: Color.brightMagenta,display: '' },
+  [Sym.Jack]:         { label: '  J  ', color: Color.brightCyan,   display: '' },
+  [Sym.Ten]:          { label: ' 10  ', color: Color.brightWhite,  display: '' },
+  [Sym.Bonus]:        { label: '  💚', color: Color.brightGreen,  display: '' },
+  [Sym.Pearl]:        { label: '  ⭐', color: Color.brightYellow,  display: '' },
+  [Sym.Empty]:        { label: '     ', color: Color.dim,          display: '' },
+  [Sym.Mystery]:      { label: '  🫧', color: Color.white,        display: '' },
 };
 
 // Build display strings

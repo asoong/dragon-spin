@@ -3,7 +3,7 @@ import { getSymbolDisplay } from './symbols';
 import { NUM_REELS, NUM_ROWS } from './paylines';
 import { write, writeln, moveTo, clearScreen, clearLine, Color, colorize, pad } from './terminal';
 
-const CELL_WIDTH = 10; // visible chars per cell (wider for emoji + line breathing room)
+const CELL_WIDTH = 9; // visible chars per cell
 const CELL_HEIGHT = 3; // top connector, symbol, bottom connector
 
 /** Total visual width of the grid in columns */
@@ -39,7 +39,7 @@ interface CellConnection {
   color: string;
 }
 
-function getCellConnections(
+export function getCellConnections(
   reel: number,
   row: number,
   winLines: WinLine[],
@@ -62,6 +62,12 @@ function getCellConnections(
       ? wl.positions[posIdx + 1][1] - wl.positions[posIdx][1]
       : NaN;
 
+    // Only draw connectors for single-row jumps (0 or ±1)
+    // Skip if either side has a multi-row jump (±2)
+    const inValid = isNaN(incoming) || (incoming >= -1 && incoming <= 1);
+    const outValid = isNaN(outgoing) || (outgoing >= -1 && outgoing <= 1);
+    if (!inValid || !outValid) continue;
+
     connections.push({ incoming, outgoing, color });
   }
 
@@ -81,22 +87,22 @@ function buildSymbolRow(
   connections: CellConnection[],
 ): string {
   const display = getSymbolDisplay(sym);
-  // CELL_WIDTH=10: [L1 L2 _ SYMBOL _ R1 R2] with spaces for breathing room
-  // Layout: 2 line chars + 1 space + 4 symbol + 1 space + 2 line chars = 10
+  // CELL_WIDTH=9: [L1 L2 SYMBOL(5) R1 R2]
+  // Layout: 2 line chars + 5 symbol + 2 line chars = 9
 
-  let leftLine = '   ';   // 3 chars: 2 line + 1 space (or all spaces)
-  let rightLine = '   ';  // 3 chars: 1 space + 2 line (or all spaces)
+  let leftLine = '  ';   // 2 chars
+  let rightLine = '  ';  // 2 chars
 
   for (const conn of connections) {
     if (conn.incoming === 0) {
-      leftLine = colorize('──', Color.bold, conn.color) + ' ';
+      leftLine = colorize('──', Color.bold, conn.color);
     }
     if (conn.outgoing === 0) {
-      rightLine = ' ' + colorize('──', Color.bold, conn.color);
+      rightLine = colorize('──', Color.bold, conn.color);
     }
   }
 
-  const symPadded = pad(display, 4);
+  const symPadded = pad(display, 5);
   return leftLine + symPadded + rightLine;
 }
 
@@ -112,24 +118,24 @@ function buildConnectorRow(
 
   for (const conn of connections) {
     if (position === 'top') {
-      // Top-left: only \ when line came from above (incoming > 0)
-      if (conn.incoming > 0) {
+      // Top-left: only \ when line came from exactly 1 row above
+      if (conn.incoming === 1) {
         chars[1] = '\\';
         charColors[1] = conn.color;
       }
-      // Top-right: only / when line going up to next reel (outgoing < 0)
-      if (conn.outgoing < 0) {
+      // Top-right: only / when line going exactly 1 row up
+      if (conn.outgoing === -1) {
         chars[CELL_WIDTH - 2] = '/';
         charColors[CELL_WIDTH - 2] = conn.color;
       }
     } else {
-      // Bottom-left: only / when line came from below (incoming < 0)
-      if (conn.incoming < 0) {
+      // Bottom-left: only / when line came from exactly 1 row below
+      if (conn.incoming === -1) {
         chars[1] = '/';
         charColors[1] = conn.color;
       }
-      // Bottom-right: only \ when line going down to next reel (outgoing > 0)
-      if (conn.outgoing > 0) {
+      // Bottom-right: only \ when line going exactly 1 row down
+      if (conn.outgoing === 1) {
         chars[CELL_WIDTH - 2] = '\\';
         charColors[CELL_WIDTH - 2] = conn.color;
       }
@@ -209,6 +215,10 @@ export function renderReelGrid(
 /**
  * Render the HUD (credits, bet, lines, last win).
  */
+function toDollars(credits: number): string {
+  return '$' + (credits / 100).toFixed(2);
+}
+
 export function renderHUD(state: GameState, lastWin: number, hudRow: number, col?: number): void {
   const totalBet = state.lines * state.betPerLine;
   const c = col ?? getCenteredCol();
@@ -217,6 +227,7 @@ export function renderHUD(state: GameState, lastWin: number, hudRow: number, col
   write(clearLine());
   write(
     colorize('Credits: ', Color.dim) + colorize(String(state.credits), Color.brightYellow, Color.bold) +
+    colorize(` (${toDollars(state.credits)})`, Color.brightYellow) +
     colorize('   Bet/Line: ', Color.dim) + colorize(String(state.betPerLine), Color.white) +
     colorize('   Lines: ', Color.dim) + colorize(String(state.lines), Color.white) +
     colorize('   Total Bet: ', Color.dim) + colorize(String(totalBet), Color.brightWhite)
@@ -225,7 +236,7 @@ export function renderHUD(state: GameState, lastWin: number, hudRow: number, col
   write(moveTo(hudRow + 1, c));
   write(clearLine());
   if (lastWin > 0) {
-    write(colorize(`WIN: ${lastWin}`, Color.brightYellow, Color.bold));
+    write(colorize(`WIN: ${lastWin} (${toDollars(lastWin)})`, Color.brightYellow, Color.bold));
   }
 }
 

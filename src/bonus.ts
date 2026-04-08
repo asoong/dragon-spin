@@ -107,7 +107,7 @@ async function runPersistingWilds(state: GameState, rng: RNG): Promise<number> {
 
     const { grid } = spinWithWilds(rng, wildPositions);
 
-    await animateReelSpin(grid, rng, GRID_START_ROW, getCenteredCol());
+    await animateReelSpin(grid, rng, GRID_START_ROW, getCenteredCol(), lockedWilds);
 
     const result = evaluate(grid, state.lines, state.betPerLine);
     totalWin += result.totalWin;
@@ -135,21 +135,21 @@ async function runReelBlast(state: GameState, rng: RNG): Promise<number> {
     write(clearScreen());
     renderFreeSpinHeader('Reel Blast', s, FREE_SPINS);
 
-    // Per rules: one symbol fills ALL positions on reels 2, 3, 4 — shared across all 3 sets
-    const centerSymbol = rng.pick(MYSTERY_SYMBOLS);
-    const centerReel: Sym[] = Array(NUM_ROWS).fill(centerSymbol);
-
-    // Generate 3 independent reel sets, each with their own reels 1 and 5
+    // Generate 3 independent reel sets, each with their own center symbol and reels 1/5
     let setWin = 0;
     for (let set = 0; set < 3; set++) {
+      // Per rules: one symbol fills ALL positions on reels 2, 3, 4 per set
+      const centerSymbol = rng.pick(MYSTERY_SYMBOLS);
+      const centerReel: Sym[] = Array(NUM_ROWS).fill(centerSymbol);
+
       const setGrid: Grid = [];
       const leftSpin = spin(rng);
       const rightSpin = spin(rng);
 
       setGrid[0] = leftSpin.grid[0];        // independent reel 1
-      setGrid[1] = [...centerReel];          // shared center — all same symbol
-      setGrid[2] = [...centerReel];          // shared center — all same symbol
-      setGrid[3] = [...centerReel];          // shared center — all same symbol
+      setGrid[1] = [...centerReel];          // center — all same symbol for this set
+      setGrid[2] = [...centerReel];          // center — all same symbol for this set
+      setGrid[3] = [...centerReel];          // center — all same symbol for this set
       setGrid[4] = rightSpin.grid[4];        // independent reel 5
 
       const gridRow = GRID_START_ROW + set * (getGridHeight() + 1);
@@ -157,7 +157,7 @@ async function runReelBlast(state: GameState, rng: RNG): Promise<number> {
       write(moveTo(gridRow - 1, getCenteredCol()));
       write(colorize(` Set ${set + 1}`, Color.dim));
 
-      await animateReelSpin(setGrid, rng, gridRow, getCenteredCol());
+      await animateReelSpin(setGrid, rng, gridRow, getCenteredCol(), undefined, [1, 2, 3]);
 
       const result = evaluate(setGrid, state.lines, state.betPerLine);
       setWin += result.totalWin;

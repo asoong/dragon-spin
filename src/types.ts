@@ -10,6 +10,8 @@ export enum Sym {
   Jack = 'J',
   Ten = '10',
   Bonus = 'BNS',
+  Pearl = 'PRL',
+  Empty = 'EMP',
   Mystery = '???',
 }
 

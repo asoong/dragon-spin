@@ -18,21 +18,37 @@ export async function animateReelSpin(
   rng: RNG,
   gridStartRow: number,
   gridStartCol: number,
+  lockedPositions?: Set<string>,
+  linkedReels?: number[],
 ): Promise<void> {
   const stopped: boolean[] = new Array(NUM_REELS).fill(false);
+  const linkedSet = new Set(linkedReels ?? []);
   const displayGrid: Grid = Array.from({ length: NUM_REELS }, () =>
     Array.from({ length: NUM_ROWS }, () => rng.pick(MYSTERY_SYMBOLS))
   );
+
+  // Pre-fill locked positions with their final symbol
+  if (lockedPositions) {
+    for (const key of lockedPositions) {
+      const [r, row] = key.split(',').map(Number);
+      displayGrid[r][row] = finalGrid[r][row];
+    }
+  }
 
   const totalFrames = 20;
   const stopInterval = 3; // frames between each reel stopping
 
   for (let frame = 0; frame < totalFrames; frame++) {
-    // Update spinning reels with random symbols
+    // Pick one shared symbol for linked reels this frame
+    const linkedSym = rng.pick(MYSTERY_SYMBOLS);
+
+    // Update spinning reels with random symbols (skip locked positions)
     for (let r = 0; r < NUM_REELS; r++) {
       if (!stopped[r]) {
         for (let row = 0; row < NUM_ROWS; row++) {
-          displayGrid[r][row] = rng.pick(MYSTERY_SYMBOLS);
+          if (!lockedPositions?.has(`${r},${row}`)) {
+            displayGrid[r][row] = linkedSet.has(r) ? linkedSym : rng.pick(MYSTERY_SYMBOLS);
+          }
         }
       }
     }
@@ -72,7 +88,8 @@ export async function animateWins(
 }
 
 /**
- * Animate a pearl appearing on the grid and flying to the pot.
+ * Animate a star flying from its grid cell to the pot.
+ * The star is already displayed on the grid as Sym.Pearl.
  */
 export async function animatePearlToPot(
   pearlReel: number,
@@ -82,40 +99,36 @@ export async function animatePearlToPot(
   potRow: number,
   potCol: number,
 ): Promise<void> {
-  const CELL_WIDTH = 8;
-  const startR = gridStartRow + 1 + pearlRow * 2; // account for borders
-  const startC = gridStartCol + 1 + pearlReel * (CELL_WIDTH + 1);
+  const CELL_W = 9;
+  const CELL_H = 3; // top connector, symbol, bottom connector
+  // Each grid row = CELL_H lines + 1 border (except last), plus top border
+  // Symbol row within each cell is the middle row (offset 1)
+  const symRow = gridStartRow + 1 + pearlRow * (CELL_H + 1) + 1;
+  const symCol = gridStartCol + 1 + pearlReel * (CELL_W + 1) + Math.floor(CELL_W / 2) - 1;
 
-  // Flash pearl on the grid cell
-  for (let flash = 0; flash < 3; flash++) {
-    write(moveTo(startR, startC));
-    write(colorize(' 🦪  ', Color.bold, Color.bgCyan));
-    await sleep(150);
-    write(moveTo(startR, startC));
-    write('        ');
-    await sleep(100);
-  }
+  // Brief pause so player sees the star on the grid
+  await sleep(600);
 
-  // Fly pearl from grid position to pot
-  const steps = 8;
-  const dr = (potRow - startR) / steps;
-  const dc = (potCol - startC) / steps;
+  // Fly star from grid position to pot
+  const steps = 10;
+  const dr = (potRow - symRow) / steps;
+  const dc = (potCol - symCol) / steps;
 
   for (let i = 0; i <= steps; i++) {
-    const r = Math.round(startR + dr * i);
-    const c = Math.round(startC + dc * i);
+    const r = Math.round(symRow + dr * i);
+    const c = Math.round(symCol + dc * i);
 
     // Clear previous position
     if (i > 0) {
-      const prevR = Math.round(startR + dr * (i - 1));
-      const prevC = Math.round(startC + dc * (i - 1));
+      const prevR = Math.round(symRow + dr * (i - 1));
+      const prevC = Math.round(symCol + dc * (i - 1));
       write(moveTo(prevR, prevC));
       write('  ');
     }
 
     write(moveTo(r, c));
-    write(colorize('🦪', Color.bold));
-    await sleep(50);
+    write(colorize('⭐', Color.bold));
+    await sleep(40);
   }
 
   // Clear final position
@@ -131,8 +144,8 @@ export async function animatePotExplode(
   potCol: number,
 ): Promise<void> {
   const frames = [
-    ['     🏺     '],
-    ['    💥🏺💥    '],
+    ['     🎰     '],
+    ['    💥🎰💥    '],
     ['   💥💥💥💥💥   '],
     ['  ✨💥🔥💥✨  '],
     [' ✨✨🔥🔥🔥✨✨ '],

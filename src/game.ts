@@ -1,4 +1,4 @@
-import { GameState, SpinOutcome, Sym } from './types';
+import { GameState, SpinOutcome, Sym, Grid, WinLine } from './types';
 import { RNG } from './rng';
 import { spin } from './reels';
 import { evaluate } from './evaluator';
@@ -20,6 +20,8 @@ const BET_OPTIONS = [1, 2, 5, 10, 25, 50, 100];
 
 export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
   let lastWin = 0;
+  let lastWinLines: WinLine[] = [];
+  let lastGrid: Grid | null = null;
   let running = true;
 
   // Handle clean exit
@@ -41,15 +43,17 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
     write(moveTo(1, gridCol));
     write(colorize('DRAGON SPIN', Color.brightRed, Color.bold));
 
-    // Render idle grid (mystery symbols or last spin result)
-    const lastSpin = state.history.length ? state.history[state.history.length - 1].grid : null;
-    const idleGrid = lastSpin ?? Array.from({ length: 5 }, () => Array.from({ length: 3 }, () => Sym.Mystery));
-    renderReelGrid(idleGrid, GRID_START_ROW, gridCol);
+    // Render idle grid (mystery symbols or last spin result with win lines)
+    const idleGrid = lastGrid
+      ?? (state.history.length ? state.history[state.history.length - 1].grid : null)
+      ?? Array.from({ length: 5 }, () => Array.from({ length: 3 }, () => Sym.Mystery));
+    renderReelGrid(idleGrid, GRID_START_ROW, gridCol, lastWinLines.length > 0 ? lastWinLines : undefined);
 
     const hudRow = GRID_START_ROW + getGridHeight() + 1;
     renderHUD(state, lastWin, hudRow, gridCol);
-    renderPearlPot(state.pearlCount, hudRow + 2, gridCol);
-    renderControls(hudRow + 10, gridCol);
+    renderPearlPot(state.pearlCount, hudRow + 3, gridCol);
+    const controlsRow = (process.stdout.rows || 24) - 1;
+    renderControls(controlsRow, gridCol);
 
     // Wait for input
     const key = await waitForKey();
@@ -109,15 +113,26 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       // Deduct bet
       state.credits -= totalBet;
       lastWin = 0;
+      lastWinLines = [];
+      lastGrid = null;
       renderHUD(state, 0, hudRow, gridCol);
 
-      // Spin
+      // Spin and check for pearl
       const { grid, mysteryResolutions } = spin(rng);
+      const hasPearl = checkPearlSpawn(rng);
+      let pearlReel = -1;
+      let pearlRow = -1;
+
+      if (hasPearl) {
+        pearlReel = rng.int(0, 4);
+        pearlRow = rng.int(0, 2);
+        grid[pearlReel][pearlRow] = Sym.Pearl;
+      }
 
       // Animate
       await animateReelSpin(grid, rng, GRID_START_ROW, gridCol);
 
-      // Evaluate
+      // Evaluate (Pearl breaks lines just like Bonus)
       const result = evaluate(grid, state.lines, state.betPerLine);
 
       // Show wins
@@ -126,6 +141,10 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       if (result.wins.length > 0) {
         await animateWins(grid, result.wins, GRID_START_ROW, gridCol);
       }
+
+      // Store grid and win lines so they persist on screen
+      lastGrid = grid;
+      lastWinLines = result.wins;
 
       // Award winnings
       lastWin = result.totalWin;
@@ -157,14 +176,16 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       // Auto-save
       saveGame(state);
 
-      // Pearl mechanic — check for pearl spawn
-      if (checkPearlSpawn(rng)) {
-        const pearlReel = rng.int(0, 4);
-        const pearlRow = rng.int(0, 2);
-        const potRow = hudRow + 2;
+      // Pearl mechanic — animate pearl to pot if one spawned
+      if (hasPearl) {
+        const potRow = hudRow + 3;
         const potCol = gridCol;
 
         await animatePearlToPot(pearlReel, pearlRow, GRID_START_ROW, gridCol, potRow, potCol);
+
+        // Replace pearl with empty slot and re-render
+        grid[pearlReel][pearlRow] = Sym.Empty;
+        renderReelGrid(grid, GRID_START_ROW, gridCol, lastWinLines.length > 0 ? lastWinLines : undefined);
 
         state.pearlCount++;
         renderPearlPot(state.pearlCount, potRow, gridCol);
@@ -178,7 +199,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
 
           write(clearScreen());
           writeln();
-          writeln(colorize('  🏺 THE POT HAS EXPLODED! 🏺', Color.brightYellow, Color.bold));
+          writeln(colorize('  🎰 THE POT HAS EXPLODED! 🎰', Color.brightYellow, Color.bold));
           writeln(colorize('  Jackpot Pick is starting...', Color.brightCyan));
           writeln(colorize('  Press any key to begin!', Color.dim));
           await waitForKey();

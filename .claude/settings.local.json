@@ -5,7 +5,9 @@
       "Bash(chmod +x:*)",
       "Bash(timeout 3 node dist/index.js)",
       "Bash(gtimeout 3 node dist/index.js)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(rtk proxy:*)",
+      "Bash(/Users/alexandersoong/Projects/dragon-spin/node_modules/.bin/vitest run:*)"
     ]
   }
 }

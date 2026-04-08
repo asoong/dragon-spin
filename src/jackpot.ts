@@ -210,7 +210,8 @@ export async function runJackpotGame(state: GameState, rng: RNG): Promise<number
 export function renderPearlPot(pearlCount: number, row: number, col: number): void {
   write(moveTo(row, col));
   write(clearLine());
-  const filled = '🦪'.repeat(pearlCount);
-  const empty = '○ '.repeat(MAX_PEARLS - pearlCount);
-  write(colorize(' 🏺 ', Color.brightCyan) + filled + empty + colorize(` ${pearlCount}/${MAX_PEARLS}`, Color.dim));
+  const filled = Array(pearlCount).fill('⭐').join(' ');
+  const empty = Array(MAX_PEARLS - pearlCount).fill('○').join(' ');
+  const separator = pearlCount > 0 && pearlCount < MAX_PEARLS ? ' ' : '';
+  write(colorize(' 🎰  ', Color.brightCyan) + filled + separator + empty + colorize(`  ${pearlCount}/${MAX_PEARLS}`, Color.dim));
 }

@@ -13,7 +13,7 @@ function evaluateLine(grid: Grid, payline: number[], lineIndex: number, betPerLi
   // Find the match symbol: first non-wild symbol from the left
   let matchSymbol: Sym | null = null;
   for (const s of symbols) {
-    if (s === Sym.Bonus) break;   // Bonus breaks the chain
+    if (s === Sym.Bonus || s === Sym.Pearl || s === Sym.Empty) break;
     if (s !== Sym.Wild) {
       matchSymbol = s;
       break;
@@ -34,7 +34,9 @@ function evaluateLine(grid: Grid, payline: number[], lineIndex: number, betPerLi
   const positions: [number, number][] = [];
   for (let reel = 0; reel < symbols.length; reel++) {
     const s = symbols[reel];
-    if (s === matchSymbol || s === Sym.Wild) {
+    if (s === Sym.Pearl || s === Sym.Bonus || s === Sym.Empty) {
+      break;
+    } else if (s === matchSymbol || s === Sym.Wild) {
       count++;
       positions.push([reel, payline[reel]]);
     } else {
