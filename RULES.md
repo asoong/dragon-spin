@@ -3,9 +3,16 @@
 ## Basic Setup
 
 - **Reels:** 5 reels, 3 visible rows each
-- **Paylines:** 30 fixed paylines
-- **Wins:** Left-to-right on active paylines, starting from reel 1. Only the highest win per line is paid.
-- **Scatter:** Bonus symbol pays are independent of paylines (any position on reels 2, 3, 4). Scatter pay is multiplied by total bet.
+- **Paylines:** 30 fixed paylines (base game, Raining Wilds, Persisting Wilds). Reel Blast uses 90 total paylines (30 per reel set × 3 reel sets).
+
+## Payline Evaluation Rules
+
+- All wins (except scatter) are **left to right on an active payline starting with the leftmost reel**
+- Matching symbols must be **adjacent** (consecutive) on the payline — no gaps
+- Only the **highest win per line** is paid (longest matching run determines the payout)
+- Only the **highest scatter win of each like symbol** is paid per play
+- **Scatter pays are paid in addition to line pays**, not instead of them
+- Wild substitutes for all symbols except Bonus
 
 ## Symbols
 
@@ -46,12 +53,41 @@ Triggered by landing 3 Bonus scatters on reels 2, 3, and 4. A wheel spins to sel
 
 ### 3. Reel Blast Free Games
 - **Spins:** 5
+- **Paylines:** 90 total (30 per reel set × 3 reel sets)
 - **Mechanic:** Play occurs on 3 separate reel sets simultaneously, all sharing a common center reel (reels 2, 3, and 4)
   - The shared center reel shows one symbol that counts for all 3 reel sets
   - Reels 1 and 5 are independent per reel set
-  - Each reel set uses the same 30 paylines
+  - Each reel set uses the same 30 payline definitions
 - **Mystery stacks:** Still active, all mystery positions on a reel resolve to the same symbol
 - **No retriggering:** Bonus symbols do not appear; no additional free spins
+
+## Mode-Specific Paytables
+
+Each bonus mode uses a **different paytable** from the base game:
+
+### Raining Wilds Paytable
+- **Wild:** x100 / x50 / x20 (5/4/3-of-a-kind) — higher than base game
+- **Dragons:** same as base game (x50/x20/x5)
+- **Cards:** same as base game
+
+### Persisting Wilds Paytable
+- **Persisting Wild:** x100 / x50 / x20 (5/4/3-of-a-kind) — replaces regular Wild
+- **Dragons:** x20 / x20 / x5 (reduced from base game)
+- **Cards:** A x20/x10/x5, KQJT x20/x10/x2
+
+### Reel Blast Paytable
+- **Wild:** x100 / x50 (5/4-of-a-kind only — no 3-of-a-kind pay)
+- **Dragons:** x50 / x20 (5/4-of-a-kind only)
+- **Cards:** A x20/x10, KQJT x20/x10 (5/4-of-a-kind only — no 3-of-a-kind pay)
+
+> Note: Reel Blast paytable values are approximate (read from PDF imagery). Exact values should be verified against the game.
+
+## Bonus Mode Reel Strips
+
+All bonus modes (Raining Wilds, Persisting Wilds, Reel Blast) use **different reel strips** from the base game. Mystery stack resolution also differs per mode:
+- **Raining Wilds:** mystery resolves to any symbol except Wild
+- **Persisting Wilds:** mystery resolves to any symbol except Persisting Wild
+- **Reel Blast:** mystery resolves to same symbol per reel, same as base game
 
 ## General Rules
 
