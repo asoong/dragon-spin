@@ -3,7 +3,7 @@ import { RNG } from './rng';
 import { NUM_REELS, NUM_ROWS } from './paylines';
 import { spin, spinWithWilds, allPositions } from './reels';
 import { evaluate } from './evaluator';
-import { NON_WILD_SYMBOLS } from './symbols';
+import { NON_WILD_SYMBOLS, MYSTERY_SYMBOLS } from './symbols';
 import { sleep, animateReelSpin, animateWins } from './animator';
 import {
   renderReelGrid, renderHUD, renderWinDetails, renderFreeSpinHeader,
@@ -138,9 +138,9 @@ async function runReelBlast(state: GameState, rng: RNG): Promise<number> {
     write(clearScreen());
     renderFreeSpinHeader('Reel Blast', s, FREE_SPINS);
 
-    // Generate shared center reel (reels 2, 3, 4 — indices 1, 2, 3)
-    const centerSpin = spin(rng);
-    const sharedCenter: Sym[][] = [centerSpin.grid[1], centerSpin.grid[2], centerSpin.grid[3]];
+    // Per rules: one symbol fills ALL positions on reels 2, 3, 4 — shared across all 3 sets
+    const centerSymbol = rng.pick(MYSTERY_SYMBOLS);
+    const centerReel: Sym[] = Array(NUM_ROWS).fill(centerSymbol);
 
     // Generate 3 independent reel sets, each with their own reels 1 and 5
     let setWin = 0;
@@ -150,9 +150,9 @@ async function runReelBlast(state: GameState, rng: RNG): Promise<number> {
       const rightSpin = spin(rng);
 
       setGrid[0] = leftSpin.grid[0];        // independent reel 1
-      setGrid[1] = [...sharedCenter[0]];     // shared reel 2
-      setGrid[2] = [...sharedCenter[1]];     // shared reel 3
-      setGrid[3] = [...sharedCenter[2]];     // shared reel 4
+      setGrid[1] = [...centerReel];          // shared center — all same symbol
+      setGrid[2] = [...centerReel];          // shared center — all same symbol
+      setGrid[3] = [...centerReel];          // shared center — all same symbol
       setGrid[4] = rightSpin.grid[4];        // independent reel 5
 
       const gridRow = GRID_START_ROW + set * (getGridHeight() + 1);
