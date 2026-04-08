@@ -106,9 +106,6 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       const totalBet = state.lines * state.betPerLine;
 
       if (state.credits < totalBet) {
-        write(moveTo(hudRow + 3, gridCol));
-        write(colorize('Not enough credits!', Color.brightRed));
-        await sleep(1000);
         continue;
       }
 

@@ -14,13 +14,13 @@ import { saveGame } from './save';
 import { animateMiniGameReel } from './animator';
 
 const QUICK_PRESETS = [
-  { name: 'Casual    — 1,000 credits, 30 lines, 1/line  (30/spin)',  credits: 1000, lines: 30, bet: 1  },
-  { name: 'Standard  — 2,500 credits, 30 lines, 5/line  (150/spin)', credits: 2500, lines: 30, bet: 5  },
-  { name: 'High Roller — 10,000 credits, 30 lines, 25/line (750/spin)', credits: 10000, lines: 30, bet: 25 },
+  { name: 'Casual    — 1,000 credits, 23 lines, 1/line  (23/spin)',  credits: 1000, lines: 23, bet: 1  },
+  { name: 'Standard  — 2,500 credits, 23 lines, 5/line  (115/spin)', credits: 2500, lines: 23, bet: 5  },
+  { name: 'High Roller — 10,000 credits, 23 lines, 25/line (575/spin)', credits: 10000, lines: 23, bet: 25 },
 ];
 
 const CREDIT_OPTIONS = [100, 500, 1000, 2500, 5000, 10000];
-const LINE_OPTIONS = [1, 5, 10, 15, 20, 25, 30];
+const LINE_OPTIONS = [1, 5, 10, 15, 20, 23];
 const BET_OPTIONS = [1, 2, 5, 10, 25, 50, 100];
 
 async function setupNewGame(): Promise<GameState> {

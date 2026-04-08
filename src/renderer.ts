@@ -238,7 +238,9 @@ export function renderHUD(state: GameState, lastWin: number, hudRow: number, col
 
   write(moveTo(hudRow + 1, c));
   write(clearLine());
-  if (lastWin > 0) {
+  if (state.credits < totalBet) {
+    write(colorize('Not enough credits!', Color.brightRed));
+  } else if (lastWin > 0) {
     write(colorize(`WIN: ${lastWin} (${toDollars(lastWin)})`, Color.brightYellow, Color.bold));
   }
 }
