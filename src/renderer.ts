@@ -304,7 +304,7 @@ export function renderTitle(): void {
   write(clearScreen());
   const title = [
     '╔══════════════════════════════════════╗',
-    '║         D R A G O N   S P I N       ║',
+    '║        D R A G O N   S P I N         ║',
     '║            ~ CLI Edition ~           ║',
     '╚══════════════════════════════════════╝',
   ];

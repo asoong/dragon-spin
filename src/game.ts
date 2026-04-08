@@ -30,7 +30,9 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
     write(showCursor());
     process.exit(0);
   };
-  process.on('SIGINT', cleanup);
+  process.once('SIGINT', cleanup);
+  process.once('SIGTERM', cleanup);
+  process.once('SIGHUP', cleanup);
 
   write(hideCursor());
 
@@ -171,7 +173,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
 
       // Cap history to last 500 spins to keep save file reasonable
       if (state.history.length > 500) {
-        state.history = state.history.slice(-500);
+        state.history.splice(0, state.history.length - 500);
       }
 
       // Auto-save
@@ -252,6 +254,9 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
     }
   }
 
+  process.removeListener('SIGINT', cleanup);
+  process.removeListener('SIGTERM', cleanup);
+  process.removeListener('SIGHUP', cleanup);
   write(showCursor());
   write(clearScreen());
   writeln(colorize('\n  Thanks for playing Dragon Spin!\n', Color.brightRed, Color.bold));

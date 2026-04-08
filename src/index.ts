@@ -140,6 +140,12 @@ async function main(): Promise<void> {
   await gameLoop(state, rng);
 }
 
+process.on('unhandledRejection', (reason) => {
+  write(showCursor());
+  console.error('Unhandled rejection:', reason);
+  process.exit(1);
+});
+
 main().catch((err) => {
   write(showCursor());
   console.error('Fatal error:', err);

@@ -4,15 +4,28 @@ import * as readline from 'node:readline';
  * Wait for a single keypress in raw mode. Returns the key string.
  */
 export function waitForKey(): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const wasRaw = process.stdin.isRaw;
     process.stdin.setRawMode(true);
     process.stdin.resume();
-    process.stdin.once('data', (data) => {
+
+    const onData = (data: Buffer) => {
+      teardown();
+      resolve(data.toString());
+    };
+    const onError = (err: Error) => {
+      teardown();
+      reject(err);
+    };
+    const teardown = () => {
+      process.stdin.removeListener('data', onData);
+      process.stdin.removeListener('error', onError);
       process.stdin.setRawMode(wasRaw ?? false);
       process.stdin.pause();
-      resolve(data.toString());
-    });
+    };
+
+    process.stdin.once('data', onData);
+    process.stdin.once('error', onError);
   });
 }
 
@@ -24,10 +37,19 @@ export function prompt(question: string): Promise<string> {
     input: process.stdin,
     output: process.stdout,
   });
-  return new Promise((resolve) => {
+  let answered = false;
+  return new Promise<string>((resolve, reject) => {
     rl.question(question, (answer) => {
+      answered = true;
       rl.close();
       resolve(answer.trim());
+    });
+    rl.once('error', (err) => {
+      rl.close();
+      reject(err);
+    });
+    rl.once('close', () => {
+      if (!answered) resolve('');
     });
   });
 }

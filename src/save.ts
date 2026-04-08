@@ -12,20 +12,41 @@ export function saveExists(): boolean {
 
 export function saveGame(state: GameState): void {
   if (!fs.existsSync(SAVE_DIR)) {
-    fs.mkdirSync(SAVE_DIR, { recursive: true });
+    fs.mkdirSync(SAVE_DIR, { recursive: true, mode: 0o700 });
   }
   state.lastPlayed = new Date().toISOString();
-  fs.writeFileSync(SAVE_FILE, JSON.stringify(state, null, 2), 'utf-8');
+  fs.writeFileSync(SAVE_FILE, JSON.stringify(state, null, 2), { encoding: 'utf-8', mode: 0o600 });
+}
+
+function isValidGameState(obj: unknown): obj is GameState {
+  if (typeof obj !== 'object' || obj === null) return false;
+  const s = obj as Record<string, unknown>;
+
+  if (typeof s.credits !== 'number' || !Number.isFinite(s.credits) || s.credits < 0) return false;
+  if (typeof s.lines !== 'number' || !Number.isInteger(s.lines) || s.lines < 1 || s.lines > 23) return false;
+  if (typeof s.betPerLine !== 'number' || !Number.isInteger(s.betPerLine) || s.betPerLine < 1) return false;
+  if (!Array.isArray(s.history)) return false;
+  if (typeof s.lastPlayed !== 'string') return false;
+
+  if (typeof s.stats !== 'object' || s.stats === null) return false;
+  const st = s.stats as Record<string, unknown>;
+  if (typeof st.spins !== 'number' || !Number.isFinite(st.spins)) return false;
+  if (typeof st.wagered !== 'number' || !Number.isFinite(st.wagered)) return false;
+  if (typeof st.won !== 'number' || !Number.isFinite(st.won)) return false;
+  if (typeof st.biggestWin !== 'number' || !Number.isFinite(st.biggestWin)) return false;
+
+  return true;
 }
 
 export function loadGame(): GameState | null {
   if (!saveExists()) return null;
   try {
     const data = fs.readFileSync(SAVE_FILE, 'utf-8');
-    const parsed = JSON.parse(data) as GameState;
+    const parsed = JSON.parse(data);
+    if (!isValidGameState(parsed)) return null;
     // Backward compatibility for saves without pearl/jackpot fields
-    if (parsed.pearlCount === undefined) parsed.pearlCount = 0;
-    if (parsed.stats.jackpotWins === undefined) parsed.stats.jackpotWins = 0;
+    if ((parsed as any).pearlCount === undefined) (parsed as any).pearlCount = 0;
+    if ((parsed.stats as any).jackpotWins === undefined) (parsed.stats as any).jackpotWins = 0;
     return parsed;
   } catch {
     return null;

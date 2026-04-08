@@ -31,7 +31,7 @@ export function createRNG(): RNG {
     },
 
     chance(probability: number): boolean {
-      return Math.random() < probability;
+      return randomInt(0, 1_000_000) < probability * 1_000_000;
     },
   };
 }
