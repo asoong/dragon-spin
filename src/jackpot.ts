@@ -56,7 +56,12 @@ const BOARD_COLS = 4;
 const BOARD_ROWS = 3;
 const CELL_W = 12;
 const BOARD_START_ROW = 6;
-const BOARD_START_COL = 5;
+
+function getBoardCol(): number {
+  const termWidth = process.stdout.columns || 80;
+  const boardWidth = BOARD_COLS * CELL_W;
+  return Math.max(1, Math.floor((termWidth - boardWidth) / 2));
+}
 
 function renderJackpotBoard(
   board: JackpotTier[],
@@ -92,10 +97,10 @@ function renderTierCounts(
   counts: Record<JackpotTier, number>,
   row: number,
 ): void {
-  write(moveTo(row, 5));
+  write(moveTo(row, getBoardCol()));
   write(clearLine());
   const tiers: JackpotTier[] = ['mini', 'minor', 'major', 'jackpot'];
-  let line = '  ';
+  let line = '';
   for (const tier of tiers) {
     const label = TIER_LABELS[tier];
     const color = TIER_COLORS[tier];
@@ -114,20 +119,22 @@ export async function runJackpotGame(state: GameState, rng: RNG): Promise<number
 
   write(clearScreen());
 
+  const col = getBoardCol();
+
   // Title
-  write(moveTo(2, 5));
-  write(colorize('  ★ ★ ★  JACKPOT PICK  ★ ★ ★', Color.brightYellow, Color.bold));
-  write(moveTo(3, 5));
-  write(colorize('  Pick orbs to reveal tiers — 3 matching wins!', Color.dim));
+  write(moveTo(2, col));
+  write(colorize('★ ★ ★  JACKPOT PICK  ★ ★ ★', Color.brightYellow, Color.bold));
+  write(moveTo(3, col));
+  write(colorize('Pick orbs to reveal tiers — 3 matching wins!', Color.dim));
 
   // Show payout table
-  write(moveTo(4, 5));
+  write(moveTo(4, col));
   write(colorize(
-    `  MINI: ${totalBet * 10}  MINOR: ${totalBet * 25}  MAJOR: ${totalBet * 100}  JACKPOT: ${totalBet * 500}`,
+    `MINI: ${totalBet * 10}  MINOR: ${totalBet * 25}  MAJOR: ${totalBet * 100}  JACKPOT: ${totalBet * 500}`,
     Color.dim,
   ));
 
-  renderJackpotBoard(board, revealed, BOARD_START_ROW, BOARD_START_COL);
+  renderJackpotBoard(board, revealed, BOARD_START_ROW, col);
   renderTierCounts(counts, BOARD_START_ROW + BOARD_ROWS * 2 + 1);
 
   const promptRow = BOARD_START_ROW + BOARD_ROWS * 2 + 3;
@@ -137,21 +144,21 @@ export async function runJackpotGame(state: GameState, rng: RNG): Promise<number
     const answer = await prompt('  Pick an orb (1-12): ');
     const num = parseInt(answer, 10);
     if (isNaN(num) || num < 1 || num > 12) {
-      write(moveTo(promptRow + 1, 5));
+      write(moveTo(promptRow + 1, col));
       write(clearLine());
-      write(colorize('  Please enter a number 1-12', Color.brightRed));
+      write(colorize('Please enter a number 1-12', Color.brightRed));
       await sleep(800);
-      write(moveTo(promptRow + 1, 5));
+      write(moveTo(promptRow + 1, col));
       write(clearLine());
       continue;
     }
     const pick = num - 1;
     if (revealed.has(pick)) {
-      write(moveTo(promptRow + 1, 5));
+      write(moveTo(promptRow + 1, col));
       write(clearLine());
-      write(colorize('  Already revealed! Pick another.', Color.brightRed));
+      write(colorize('Already revealed! Pick another.', Color.brightRed));
       await sleep(800);
-      write(moveTo(promptRow + 1, 5));
+      write(moveTo(promptRow + 1, col));
       write(clearLine());
       continue;
     }
@@ -164,7 +171,7 @@ export async function runJackpotGame(state: GameState, rng: RNG): Promise<number
     const r = Math.floor(pick / BOARD_COLS);
     const c = pick % BOARD_COLS;
     const cellRow = BOARD_START_ROW + r * 2;
-    const cellCol = BOARD_START_COL + c * CELL_W;
+    const cellCol = col + c * CELL_W;
 
     // Flash effect
     for (let flash = 0; flash < 3; flash++) {
@@ -177,7 +184,7 @@ export async function runJackpotGame(state: GameState, rng: RNG): Promise<number
     }
 
     // Show revealed board
-    renderJackpotBoard(board, revealed, BOARD_START_ROW, BOARD_START_COL);
+    renderJackpotBoard(board, revealed, BOARD_START_ROW, col);
     renderTierCounts(counts, BOARD_START_ROW + BOARD_ROWS * 2 + 1);
 
     // Check for 3-match
@@ -195,12 +202,12 @@ export async function runJackpotGame(state: GameState, rng: RNG): Promise<number
   write(moveTo(promptRow + 1, 1));
   write(clearLine());
 
-  write(moveTo(promptRow, 5));
-  write(colorize(`  ★ ${TIER_LABELS[wonTier]} JACKPOT! ★`, Color.bold, color));
-  write(moveTo(promptRow + 1, 5));
-  write(colorize(`  You won ${payout} credits!`, Color.bold, Color.brightYellow));
-  write(moveTo(promptRow + 3, 5));
-  write(colorize('  Press any key to continue...', Color.dim));
+  write(moveTo(promptRow, col));
+  write(colorize(`★ ${TIER_LABELS[wonTier]} JACKPOT! ★`, Color.bold, color));
+  write(moveTo(promptRow + 1, col));
+  write(colorize(`You won ${payout} credits!`, Color.bold, Color.brightYellow));
+  write(moveTo(promptRow + 3, col));
+  write(colorize('Press any key to continue...', Color.dim));
 
   await waitForKey();
 

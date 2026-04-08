@@ -4,7 +4,7 @@ import { spin } from './reels';
 import { evaluate } from './evaluator';
 import { MAX_LINES } from './paylines';
 import { saveGame } from './save';
-import { sleep, animateReelSpin, animateWins, animateCredits, animatePearlToPot, animatePotExplode, animateMiniGameReel } from './animator';
+import { sleep, animateReelSpin, animateWins, animateCredits, animatePearlToPot, animatePotExplode, animateMiniGameReel, animateBonusFlash } from './animator';
 import {
   renderReelGrid, renderHUD, renderWinDetails, renderControls,
   getGridHeight, getCenteredCol,
@@ -216,7 +216,7 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
 
       // Bonus trigger
       if (result.bonusTriggered) {
-        await sleep(500);
+        await animateBonusFlash(grid, GRID_START_ROW, gridCol);
         write(clearScreen());
 
         writeln();

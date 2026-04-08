@@ -3,7 +3,7 @@ import { getSymbolDisplay } from './symbols';
 import { NUM_REELS, NUM_ROWS } from './paylines';
 import { write, writeln, moveTo, clearScreen, clearLine, Color, colorize, pad } from './terminal';
 
-const CELL_WIDTH = 9; // visible chars per cell
+const CELL_WIDTH = 8; // visible chars per cell
 const CELL_HEIGHT = 3; // top connector, symbol, bottom connector
 
 /** Total visual width of the grid in columns */
@@ -87,8 +87,8 @@ function buildSymbolRow(
   connections: CellConnection[],
 ): string {
   const display = getSymbolDisplay(sym);
-  // CELL_WIDTH=9: [L1 L2 SYMBOL(5) R1 R2]
-  // Layout: 2 line chars + 5 symbol + 2 line chars = 9
+  // CELL_WIDTH=8: [L1 L2 SYMBOL(4) R1 R2]
+  // Layout: 2 line chars + 4 symbol + 2 line chars = 8
 
   let leftLine = '  ';   // 2 chars
   let rightLine = '  ';  // 2 chars
@@ -102,7 +102,7 @@ function buildSymbolRow(
     }
   }
 
-  const symPadded = pad(display, 5);
+  const symPadded = pad(display, 4);
   return leftLine + symPadded + rightLine;
 }
 

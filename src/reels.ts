@@ -17,19 +17,19 @@ const BASE_STRIPS: Sym[][] = [
    M, M, M, Sym.Jack, Sym.Ten, Sym.GreenDragon, Sym.Ace,
    M, M, M, Sym.King, Sym.BlueDragon, Sym.Queen, Sym.Jack, Sym.PurpleDragon, Sym.Ten, Sym.Ace],
 
-  // Reel 2 (has bonus)
-  [M, M, M, Sym.King, Sym.Ace, B, Sym.RedDragon,
-   M, M, M, Sym.Queen, Sym.Jack, Sym.GreenDragon, Sym.Ten,
+  // Reel 2 (has bonus — 2 bonus symbols for ~25% window hit rate)
+  [M, M, M, Sym.King, B, Sym.Ace, Sym.RedDragon,
+   M, M, M, Sym.Queen, Sym.Jack, B, Sym.GreenDragon, Sym.Ten,
    M, M, M, Sym.Ace, Sym.BlueDragon, Sym.King, Sym.Queen, Sym.PurpleDragon, Sym.Jack, Sym.Ten],
 
-  // Reel 3 (has bonus)
-  [M, M, M, Sym.Queen, Sym.King, Sym.Ace, Sym.BlueDragon,
-   M, M, M, Sym.Jack, B, Sym.PurpleDragon, Sym.Ten,
+  // Reel 3 (has bonus — 2 bonus symbols)
+  [M, M, M, Sym.Queen, B, Sym.King, Sym.Ace, Sym.BlueDragon,
+   M, M, M, Sym.Jack, Sym.PurpleDragon, B, Sym.Ten,
    M, M, M, Sym.King, Sym.RedDragon, Sym.Ace, Sym.Queen, Sym.GreenDragon, Sym.Jack, Sym.Ten],
 
-  // Reel 4 (has bonus)
-  [M, M, M, Sym.Ace, Sym.Jack, B, Sym.GreenDragon,
-   M, M, M, Sym.King, Sym.Queen, Sym.RedDragon, Sym.Ten,
+  // Reel 4 (has bonus — 2 bonus symbols)
+  [M, M, M, Sym.Ace, B, Sym.Jack, Sym.GreenDragon,
+   M, M, M, Sym.King, Sym.Queen, B, Sym.RedDragon, Sym.Ten,
    M, M, M, Sym.Ace, Sym.PurpleDragon, Sym.King, Sym.Jack, Sym.BlueDragon, Sym.Queen, Sym.Ten],
 
   // Reel 5 (no bonus)

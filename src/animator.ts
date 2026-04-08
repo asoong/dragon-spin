@@ -88,6 +88,66 @@ export async function animateWins(
 }
 
 /**
+ * Flash bonus symbol cells with white background.
+ */
+export async function animateBonusFlash(
+  grid: Grid,
+  gridStartRow: number,
+  gridStartCol: number,
+): Promise<void> {
+  const CELL_W = 8;
+  const CELL_H = 3;
+
+  // Find all bonus positions on reels 2, 3, 4 (indices 1, 2, 3)
+  const bonusPositions: [number, number][] = [];
+  for (const reel of [1, 2, 3]) {
+    for (let row = 0; row < NUM_ROWS; row++) {
+      if (grid[reel][row] === Sym.Bonus) {
+        bonusPositions.push([reel, row]);
+      }
+    }
+  }
+
+  if (bonusPositions.length === 0) return;
+
+  // Flash white background on/off
+  for (let flash = 0; flash < 5; flash++) {
+    // White background on
+    for (const [reel, row] of bonusPositions) {
+      const cellRow = gridStartRow + 1 + row * (CELL_H + 1);
+      const cellCol = gridStartCol + 1 + reel * (CELL_W + 1);
+      for (let r = 0; r < CELL_H; r++) {
+        write(moveTo(cellRow + r, cellCol));
+        write(Color.bgWhite + ' '.repeat(CELL_W) + Color.reset);
+      }
+      // Re-draw the symbol in the middle row with white bg
+      const symRow = cellRow + 1;
+      write(moveTo(symRow, cellCol));
+      write(colorize('   🐉   ', Color.bold, Color.bgWhite));
+    }
+    await sleep(200);
+
+    // Restore normal grid
+    renderReelGrid(grid, gridStartRow, gridStartCol);
+    await sleep(150);
+  }
+
+  // End with one more flash held briefly
+  for (const [reel, row] of bonusPositions) {
+    const cellRow = gridStartRow + 1 + row * (CELL_H + 1);
+    const cellCol = gridStartCol + 1 + reel * (CELL_W + 1);
+    for (let r = 0; r < CELL_H; r++) {
+      write(moveTo(cellRow + r, cellCol));
+      write(Color.bgWhite + ' '.repeat(CELL_W) + Color.reset);
+    }
+    const symRow = cellRow + 1;
+    write(moveTo(symRow, cellCol));
+    write(colorize('   🐉   ', Color.bold, Color.bgWhite));
+  }
+  await sleep(800);
+}
+
+/**
  * Animate a star flying from its grid cell to the pot.
  * The star is already displayed on the grid as Sym.Pearl.
  */
@@ -99,7 +159,7 @@ export async function animatePearlToPot(
   potRow: number,
   potCol: number,
 ): Promise<void> {
-  const CELL_W = 9;
+  const CELL_W = 8;
   const CELL_H = 3; // top connector, symbol, bottom connector
   // Each grid row = CELL_H lines + 1 border (except last), plus top border
   // Symbol row within each cell is the middle row (offset 1)
