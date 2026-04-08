@@ -5,6 +5,17 @@ import { write, writeln, moveTo, clearScreen, clearLine, Color, colorize, pad } 
 
 const CELL_WIDTH = 8;  // visible chars per cell (wider for emoji)
 
+/** Total visual width of the grid in columns */
+export function getGridWidth(): number {
+  return NUM_REELS * (CELL_WIDTH + 1) + 1;
+}
+
+/** Compute a column offset to center the grid horizontally */
+export function getCenteredCol(): number {
+  const termWidth = process.stdout.columns || 80;
+  return Math.max(1, Math.floor((termWidth - getGridWidth()) / 2));
+}
+
 const BOX = {
   tl: '┌', tr: '┐', bl: '└', br: '┘',
   h: '─', v: '│',
@@ -59,30 +70,33 @@ export function renderReelGrid(
 /**
  * Render the HUD (credits, bet, lines, last win).
  */
-export function renderHUD(state: GameState, lastWin: number, hudRow: number): void {
+export function renderHUD(state: GameState, lastWin: number, hudRow: number, col?: number): void {
   const totalBet = state.lines * state.betPerLine;
+  const c = col ?? getCenteredCol();
 
-  write(moveTo(hudRow, 1));
+  write(moveTo(hudRow, c));
   write(clearLine());
   write(
-    colorize(' Credits: ', Color.dim) + colorize(String(state.credits), Color.brightYellow, Color.bold) +
+    colorize('Credits: ', Color.dim) + colorize(String(state.credits), Color.brightYellow, Color.bold) +
     colorize('   Bet/Line: ', Color.dim) + colorize(String(state.betPerLine), Color.white) +
     colorize('   Lines: ', Color.dim) + colorize(String(state.lines), Color.white) +
     colorize('   Total Bet: ', Color.dim) + colorize(String(totalBet), Color.brightWhite)
   );
 
-  write(moveTo(hudRow + 1, 1));
+  write(moveTo(hudRow + 1, c));
   write(clearLine());
   if (lastWin > 0) {
-    write(colorize(` WIN: ${lastWin}`, Color.brightYellow, Color.bold));
+    write(colorize(`WIN: ${lastWin}`, Color.brightYellow, Color.bold));
   }
 }
 
 /**
  * Render win details below the grid.
  */
-export function renderWinDetails(wins: WinLine[], scatterWin: number, detailRow: number): void {
-  write(moveTo(detailRow, 1));
+export function renderWinDetails(wins: WinLine[], scatterWin: number, detailRow: number, col?: number): void {
+  const c = col ?? getCenteredCol();
+
+  write(moveTo(detailRow, c));
 
   if (wins.length === 0 && scatterWin === 0) {
     write(clearLine());
@@ -91,17 +105,17 @@ export function renderWinDetails(wins: WinLine[], scatterWin: number, detailRow:
 
   const lines: string[] = [];
   for (const w of wins.slice(0, 5)) { // show up to 5 wins
-    lines.push(`  Line ${w.lineIndex + 1}: ${w.count}x ${getSymbolDisplay(w.symbol)} = ${w.payout}`);
+    lines.push(`Line ${w.lineIndex + 1}: ${w.count}x ${getSymbolDisplay(w.symbol)} = ${w.payout}`);
   }
   if (wins.length > 5) {
-    lines.push(`  ... and ${wins.length - 5} more wins`);
+    lines.push(`... and ${wins.length - 5} more wins`);
   }
   if (scatterWin > 0) {
-    lines.push(colorize(`  SCATTER BONUS! +${scatterWin}`, Color.brightCyan, Color.bold));
+    lines.push(colorize(`SCATTER BONUS! +${scatterWin}`, Color.brightCyan, Color.bold));
   }
 
   for (let i = 0; i < 8; i++) {
-    write(moveTo(detailRow + i, 1));
+    write(moveTo(detailRow + i, c));
     write(clearLine());
     if (i < lines.length) write(lines[i]);
   }
@@ -110,11 +124,12 @@ export function renderWinDetails(wins: WinLine[], scatterWin: number, detailRow:
 /**
  * Render the controls help bar.
  */
-export function renderControls(row: number): void {
-  write(moveTo(row, 1));
+export function renderControls(row: number, col?: number): void {
+  const c = col ?? getCenteredCol();
+  write(moveTo(row, c));
   write(clearLine());
   write(colorize(
-    ' [SPACE] Spin  [↑/↓] Bet  [←/→] Lines  [Q] Quit',
+    '[SPACE] Spin  [↑/↓] Bet  [←/→] Lines  [Q] Quit',
     Color.dim,
   ));
 }
@@ -130,9 +145,12 @@ export function renderTitle(): void {
     '║            ~ CLI Edition ~           ║',
     '╚══════════════════════════════════════╝',
   ];
+  const termWidth = process.stdout.columns || 80;
+  const titleWidth = title[0].length;
+  const leftPad = Math.max(0, Math.floor((termWidth - titleWidth) / 2));
   writeln();
   for (const line of title) {
-    writeln(colorize(`  ${line}`, Color.brightRed, Color.bold));
+    writeln(' '.repeat(leftPad) + colorize(line, Color.brightRed, Color.bold));
   }
   writeln();
 }
@@ -151,10 +169,11 @@ export function renderBonusAnnouncement(mode: string): void {
  * Render free spins header.
  */
 export function renderFreeSpinHeader(mode: string, spinNum: number, totalSpins: number): void {
-  write(moveTo(1, 1));
+  const c = getCenteredCol();
+  write(moveTo(1, c));
   write(clearLine());
   write(colorize(
-    ` ${mode.toUpperCase()} — Free Spin ${spinNum}/${totalSpins}`,
+    `${mode.toUpperCase()} — Free Spin ${spinNum}/${totalSpins}`,
     Color.brightMagenta, Color.bold,
   ));
 }

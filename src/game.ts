@@ -7,7 +7,7 @@ import { saveGame } from './save';
 import { sleep, animateReelSpin, animateWins, animateCredits, animatePearlToPot, animatePotExplode, animateMiniGameReel } from './animator';
 import {
   renderReelGrid, renderHUD, renderWinDetails, renderControls,
-  getGridHeight,
+  getGridHeight, getCenteredCol,
 } from './renderer';
 import { write, writeln, moveTo, clearScreen, clearLine, hideCursor, showCursor, Color, colorize } from './terminal';
 import { waitForKey } from './input';
@@ -16,7 +16,6 @@ import { BonusMode } from './types';
 import { checkPearlSpawn, checkPotExplode, runJackpotGame, renderPearlPot } from './jackpot';
 
 const GRID_START_ROW = 3;
-const GRID_START_COL = 3;
 const BET_OPTIONS = [1, 2, 5, 10, 25, 50, 100];
 
 export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
@@ -33,22 +32,24 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
   write(hideCursor());
 
   while (running) {
+    const gridCol = getCenteredCol();
+
     // Render full screen
     write(clearScreen());
 
-    // Title bar
-    write(moveTo(1, 1));
-    write(colorize(' DRAGON SPIN', Color.brightRed, Color.bold));
+    // Title bar — centered
+    write(moveTo(1, gridCol));
+    write(colorize('DRAGON SPIN', Color.brightRed, Color.bold));
 
     // Render idle grid (mystery symbols or last spin result)
     const lastSpin = state.history.length ? state.history[state.history.length - 1].grid : null;
     const idleGrid = lastSpin ?? Array.from({ length: 5 }, () => Array.from({ length: 3 }, () => Sym.Mystery));
-    renderReelGrid(idleGrid, GRID_START_ROW, GRID_START_COL);
+    renderReelGrid(idleGrid, GRID_START_ROW, gridCol);
 
     const hudRow = GRID_START_ROW + getGridHeight() + 1;
-    renderHUD(state, lastWin, hudRow);
-    renderPearlPot(state.pearlCount, hudRow + 2, 1);
-    renderControls(hudRow + 10);
+    renderHUD(state, lastWin, hudRow, gridCol);
+    renderPearlPot(state.pearlCount, hudRow + 2, gridCol);
+    renderControls(hudRow + 10, gridCol);
 
     // Wait for input
     const key = await waitForKey();
@@ -99,8 +100,8 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       const totalBet = state.lines * state.betPerLine;
 
       if (state.credits < totalBet) {
-        write(moveTo(hudRow + 3, 1));
-        write(colorize(' Not enough credits!', Color.brightRed));
+        write(moveTo(hudRow + 3, gridCol));
+        write(colorize('Not enough credits!', Color.brightRed));
         await sleep(1000);
         continue;
       }
@@ -108,23 +109,23 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       // Deduct bet
       state.credits -= totalBet;
       lastWin = 0;
-      renderHUD(state, 0, hudRow);
+      renderHUD(state, 0, hudRow, gridCol);
 
       // Spin
       const { grid, mysteryResolutions } = spin(rng);
 
       // Animate
-      await animateReelSpin(grid, rng, GRID_START_ROW, GRID_START_COL);
+      await animateReelSpin(grid, rng, GRID_START_ROW, gridCol);
 
       // Evaluate
       const result = evaluate(grid, state.lines, state.betPerLine);
 
       // Show wins
-      renderWinDetails(result.wins, result.scatterWin, hudRow + 2);
+      renderWinDetails(result.wins, result.scatterWin, hudRow + 2, gridCol);
 
       if (result.wins.length > 0) {
         const allPos = result.wins.flatMap(w => w.positions);
-        await animateWins(grid, allPos, GRID_START_ROW, GRID_START_COL);
+        await animateWins(grid, allPos, GRID_START_ROW, gridCol);
       }
 
       // Award winnings
@@ -132,9 +133,9 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
       if (lastWin > 0) {
         const prevCredits = state.credits;
         state.credits += lastWin;
-        await animateCredits(prevCredits, state.credits, hudRow, 1);
+        await animateCredits(prevCredits, state.credits, hudRow, gridCol);
       }
-      renderHUD(state, lastWin, hudRow);
+      renderHUD(state, lastWin, hudRow, gridCol);
 
       // Record spin
       state.stats.spins++;
@@ -162,12 +163,12 @@ export async function gameLoop(state: GameState, rng: RNG): Promise<void> {
         const pearlReel = rng.int(0, 4);
         const pearlRow = rng.int(0, 2);
         const potRow = hudRow + 2;
-        const potCol = 4;
+        const potCol = gridCol;
 
-        await animatePearlToPot(pearlReel, pearlRow, GRID_START_ROW, GRID_START_COL, potRow, potCol);
+        await animatePearlToPot(pearlReel, pearlRow, GRID_START_ROW, gridCol, potRow, potCol);
 
         state.pearlCount++;
-        renderPearlPot(state.pearlCount, potRow, 1);
+        renderPearlPot(state.pearlCount, potRow, gridCol);
 
         // Check if pot explodes
         if (checkPotExplode(state.pearlCount, rng)) {

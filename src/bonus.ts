@@ -7,7 +7,7 @@ import { NON_WILD_SYMBOLS, MYSTERY_SYMBOLS } from './symbols';
 import { sleep, animateReelSpin, animateWins } from './animator';
 import {
   renderReelGrid, renderHUD, renderWinDetails, renderFreeSpinHeader,
-  renderBonusAnnouncement, getGridHeight, renderControls,
+  renderBonusAnnouncement, getGridHeight, renderControls, getCenteredCol,
 } from './renderer';
 import { write, writeln, moveTo, clearScreen, clearLine, Color, colorize, hideCursor } from './terminal';
 import { waitForKey } from './input';
@@ -15,7 +15,6 @@ import { GameState } from './types';
 
 const FREE_SPINS = 5;
 const GRID_START_ROW = 3;
-const GRID_START_COL = 3;
 
 /**
  * Run the chosen bonus mode. Returns total bonus winnings.
@@ -59,7 +58,7 @@ async function runRainingWilds(state: GameState, rng: RNG): Promise<number> {
 
     const { grid } = spinWithWilds(rng, positions);
 
-    await animateReelSpin(grid, rng, GRID_START_ROW, GRID_START_COL);
+    await animateReelSpin(grid, rng, GRID_START_ROW, getCenteredCol());
 
     const result = evaluate(grid, state.lines, state.betPerLine);
     totalWin += result.totalWin;
@@ -70,7 +69,7 @@ async function runRainingWilds(state: GameState, rng: RNG): Promise<number> {
 
     if (result.wins.length > 0) {
       const allPos = result.wins.flatMap(w => w.positions);
-      await animateWins(grid, allPos, GRID_START_ROW, GRID_START_COL);
+      await animateWins(grid, allPos, GRID_START_ROW, getCenteredCol());
     }
 
     writeln();
@@ -109,7 +108,7 @@ async function runPersistingWilds(state: GameState, rng: RNG): Promise<number> {
 
     const { grid } = spinWithWilds(rng, wildPositions);
 
-    await animateReelSpin(grid, rng, GRID_START_ROW, GRID_START_COL);
+    await animateReelSpin(grid, rng, GRID_START_ROW, getCenteredCol());
 
     const result = evaluate(grid, state.lines, state.betPerLine);
     totalWin += result.totalWin;
@@ -120,7 +119,7 @@ async function runPersistingWilds(state: GameState, rng: RNG): Promise<number> {
 
     if (result.wins.length > 0) {
       const allPos = result.wins.flatMap(w => w.positions);
-      await animateWins(grid, allPos, GRID_START_ROW, GRID_START_COL);
+      await animateWins(grid, allPos, GRID_START_ROW, getCenteredCol());
     }
 
     writeln();
@@ -157,17 +156,17 @@ async function runReelBlast(state: GameState, rng: RNG): Promise<number> {
 
       const gridRow = GRID_START_ROW + set * (getGridHeight() + 1);
 
-      write(moveTo(gridRow - 1, GRID_START_COL));
+      write(moveTo(gridRow - 1, getCenteredCol()));
       write(colorize(` Set ${set + 1}`, Color.dim));
 
-      await animateReelSpin(setGrid, rng, gridRow, GRID_START_COL);
+      await animateReelSpin(setGrid, rng, gridRow, getCenteredCol());
 
       const result = evaluate(setGrid, state.lines, state.betPerLine);
       setWin += result.totalWin;
 
       if (result.wins.length > 0) {
         const allPos = result.wins.flatMap(w => w.positions);
-        await animateWins(setGrid, allPos, gridRow, GRID_START_COL);
+        await animateWins(setGrid, allPos, gridRow, getCenteredCol());
       }
     }
 
